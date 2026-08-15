@@ -1,4 +1,4 @@
-// Frontend Application Logic for ChronoAFR (v5.0.0 End-to-End Three-Factor Synthesis Pipeline & Pro-Forma Engine)
+// Frontend Application Logic for ChronoAFR (v5.0.1 Data Fetching, Three-Factor Synthesis Pipeline & Pro-Forma Engine)
 
 document.addEventListener('DOMContentLoaded', () => {
   loadAvailableDocuments();
@@ -50,7 +50,53 @@ function fmtNum(val, digits = 1) {
   return val.toLocaleString('en-US', { maximumFractionDigits: digits });
 }
 
-// RAG Document Selector Functions
+// -----------------------------------------------------------------------------
+// Tab 1: Data Fetching Engine
+// -----------------------------------------------------------------------------
+
+async function executeFetch() {
+  const ticker = document.getElementById('fetch-ticker')?.value.trim().toUpperCase() || 'NVDA';
+  const source = document.getElementById('fetch-source')?.value || 'all';
+  const outBox = document.getElementById('fetch-output');
+
+  if (outBox) {
+    outBox.innerHTML = '<div style="font-size: 0.95rem; color: #82776E; padding: 12px;">⏳ 正在連線官方資料庫 (SEC/MOPS/FRED/GDrive) 擷取並解析最新財報...</div>';
+  }
+
+  try {
+    const res = await fetch('/api/fetch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticker,
+        source,
+        sync_notebooklm: true
+      })
+    });
+    const data = await res.json();
+
+    if (data.status === 'success') {
+      let html = `<div style="line-height: 1.8; font-size: 0.92rem;">`;
+      html += `<div style="font-weight: 700; color: #2E7D32; margin-bottom: 8px;">✅ 數據擷取與解析完成！</div>`;
+      (data.results || []).forEach(r => {
+        html += `<div>• ${r}</div>`;
+      });
+      html += `<div style="margin-top: 10px; font-size: 0.82rem; color: #82776E;">📂 檔案已同步至 NotebookLM 雲端資料夾：<code>${data.gdrive_path}</code></div>`;
+      html += `</div>`;
+      if (outBox) outBox.innerHTML = html;
+      loadAvailableDocuments(); // Refresh document list in Tab 2!
+    } else {
+      if (outBox) outBox.innerHTML = `<div style="color: #EF4444; padding: 12px;">❌ 抓取失敗: ${data.message || '未知錯誤'}</div>`;
+    }
+  } catch (err) {
+    if (outBox) outBox.innerHTML = `<div style="color: #EF4444; padding: 12px;">❌ 連線失敗: ${err.message}</div>`;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Tab 2: Document Selector & RAG Query
+// -----------------------------------------------------------------------------
+
 async function loadAvailableDocuments() {
   const container = document.getElementById('doc-selector-container');
   if (!container) return;
@@ -160,7 +206,7 @@ function selectGDriveDocsOnly() {
 }
 
 // -----------------------------------------------------------------------------
-// Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.0.0)
+// Tab 2: Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.0.0)
 // -----------------------------------------------------------------------------
 
 async function runAiThreeFactorResearch() {
@@ -401,7 +447,7 @@ async function syncAnswerToNotebookLM() {
 }
 
 // -----------------------------------------------------------------------------
-// Pro-Forma Workbench Functions
+// Tab 3: Pro-Forma Workbench Functions
 // -----------------------------------------------------------------------------
 
 async function loadTickerFinancialHistory() {
@@ -428,6 +474,51 @@ async function loadTickerFinancialHistory() {
     recalculateTotals();
   } catch (err) {
     console.error("loadTickerFinancialHistory error:", err);
+  }
+}
+
+async function getAiForecastRecommendation() {
+  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
+  const feedbackEl = document.getElementById('ai-steer-feedback');
+
+  if (feedbackEl) {
+    feedbackEl.style.display = 'block';
+    feedbackEl.innerText = `🤖 Gemini AI 正在研讀 ${ticker} 最新官方財報並推薦前瞻模型參數...`;
+  }
+
+  try {
+    const res = await fetch('/api/ai_forecast_recommendation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticker })
+    });
+    const data = await res.json();
+
+    if (data.base_revenue) document.getElementById('fc-base-rev').value = data.base_revenue;
+    if (data.current_price && document.getElementById('fc-current-price')) document.getElementById('fc-current-price').value = data.current_price;
+    if (data.shares_outstanding && document.getElementById('fc-shares-outstanding')) document.getElementById('fc-shares-outstanding').value = data.shares_outstanding;
+    if (data.historical_pe_avg && document.getElementById('fc-pe-avg')) document.getElementById('fc-pe-avg').value = data.historical_pe_avg;
+
+    if (data.revenue_segments && data.revenue_segments.length > 0) {
+      revenueSegments = data.revenue_segments;
+      renderRevenueSegmentRows();
+    }
+    if (data.cogs_segments && data.cogs_segments.length > 0) {
+      cogsSegments = data.cogs_segments;
+      renderCogsSegmentRows();
+    }
+    if (data.opex_segments && data.opex_segments.length > 0) {
+      opexSegments = data.opex_segments;
+      renderOpexSegmentRows();
+    }
+
+    recalculateTotals();
+
+    if (feedbackEl) {
+      feedbackEl.innerText = `✨ ${data.ai_explanation || `已為 ${ticker} 載入 AI 研讀推薦之業務線與成本費用細拆參數！`}`;
+    }
+  } catch (err) {
+    if (feedbackEl) feedbackEl.innerText = "❌ 獲取 AI 推薦失敗: " + err;
   }
 }
 
@@ -916,7 +1007,7 @@ async function executeForecast() {
 
     const op0 = gp0 - opex0;
     const op1 = baseProj[0]?.OperatingIncome !== undefined ? baseProj[0].OperatingIncome : (gp1 - opex1);
-    const op2 = baseProj[1]?.OperatingIncome !== undefined ? baseProj[1].OperatingIncome : (gp2 - opex2);
+    const op2 = baseProj[1]?.OperatingIncome !== undefined ? baseProj[1].OperatingIncome : (gp2 - op2);
     const op3 = baseProj[2]?.OperatingIncome !== undefined ? baseProj[2].OperatingIncome : (gp3 - opex3);
 
     const tax0 = op0 > 0 ? op0 * 0.21 : 0.0;
@@ -1164,6 +1255,10 @@ async function executeForecast() {
   }
 }
 
+// -----------------------------------------------------------------------------
+// Tab 4: Review Engine
+// -----------------------------------------------------------------------------
+
 async function executeReview() {
   const ticker = document.getElementById('rv-ticker')?.value || 'AMZN';
   const actual_revenue = parseFloat(document.getElementById('rv-actual-rev')?.value) || 0;
@@ -1201,6 +1296,10 @@ async function executeReview() {
     outBox.innerText = "❌ 復盤診斷失敗: " + err;
   }
 }
+
+// -----------------------------------------------------------------------------
+// Tab 5: Reports List
+// -----------------------------------------------------------------------------
 
 async function loadReports() {
   const listContainer = document.getElementById('reports-list');
