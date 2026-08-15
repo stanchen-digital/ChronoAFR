@@ -1,4 +1,4 @@
-// Frontend Application Logic for ChronoAFR (v5.0.1 Data Fetching, Three-Factor Synthesis Pipeline & Pro-Forma Engine)
+// Frontend Application Logic for ChronoAFR (v5.0.3 Data Fetching, Three-Factor Synthesis Pipeline & Pro-Forma Engine)
 
 document.addEventListener('DOMContentLoaded', () => {
   loadAvailableDocuments();
@@ -48,6 +48,20 @@ let latestForecastPayload = null; // Holds the AI synthesized structured forecas
 function fmtNum(val, digits = 1) {
   if (typeof val !== 'number' || isNaN(val)) return '0.0';
   return val.toLocaleString('en-US', { maximumFractionDigits: digits });
+}
+
+// Helper Markdown to HTML Formatter
+function formatMarkdownText(md) {
+  if (!md) return '';
+  let html = md
+    .replace(/^### (.*$)/gim, '<h4 style="margin: 14px 0 6px 0; color: #D96B82; font-size: 1.05rem;">$1</h4>')
+    .replace(/^## (.*$)/gim, '<h3 style="margin: 16px 0 8px 0; color: #4A4036; font-size: 1.15rem;">$1</h3>')
+    .replace(/^# (.*$)/gim, '<h2 style="margin: 18px 0 10px 0; color: #4A4036; font-size: 1.25rem;">$1</h2>')
+    .replace(/\*\*(.*?)\*\*/gim, '<strong style="color: #4A4036;">$1</strong>')
+    .replace(/\*(.*?)\*/gim, '<em>$1</em>')
+    .replace(/\n\n/g, '<div style="margin-bottom: 12px;"></div>')
+    .replace(/\n/g, '<br>');
+  return html;
 }
 
 // -----------------------------------------------------------------------------
@@ -206,7 +220,7 @@ function selectGDriveDocsOnly() {
 }
 
 // -----------------------------------------------------------------------------
-// Tab 2: Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.0.0)
+// Tab 2: Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.0.3)
 // -----------------------------------------------------------------------------
 
 async function runAiThreeFactorResearch() {
@@ -276,18 +290,20 @@ async function runAiThreeFactorResearch() {
 
     // Data is sufficient!
     latestForecastPayload = data.structured_forecast;
-    latestAiQuery = "【前瞻三大因子深度研讀】1.未來營收 2.營業成本 3.營業費用";
-    latestAiAnswer = data.research_brief || "";
+    latestAiQuery = `【前瞻三大因子深度研讀】${data.ticker || ticker} 1.未來營收 2.營業成本 3.營業費用`;
+    latestAiAnswer = data.research_brief || "已完成研讀推論。";
     latestSelectedFiles = selectedDocs;
 
+    const formattedBriefHtml = formatMarkdownText(latestAiAnswer);
+
     let html = `
-      <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; line-height: 1.6; font-size: 0.92rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1.5px solid var(--card-border); padding-bottom: 10px;">
-          <span style="font-size: 1rem; font-weight: 700; color: #D96B82;">📊 ${data.ticker || ticker} 前瞻三大因子深度研讀報告</span>
-          <span style="font-size: 0.8rem; background: #E8F5E9; color: #2E7D32; font-weight: 700; padding: 3px 8px; border-radius: 4px;">✅ 資料充足 (Data Sufficient)</span>
+      <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; line-height: 1.65; font-size: 0.92rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1.5px solid var(--card-border); padding-bottom: 10px;">
+          <span style="font-size: 1.05rem; font-weight: 700; color: #D96B82;">📊 ${data.ticker || ticker} 前瞻三大因子深度研讀報告</span>
+          <span style="font-size: 0.8rem; background: #E8F5E9; color: #2E7D32; font-weight: 700; padding: 4px 10px; border-radius: 6px;">✅ 資料充足 (Data Sufficient)</span>
         </div>
-        <div style="white-space: pre-wrap; font-family: inherit; color: var(--text-main); margin-bottom: 18px;">
-${latestAiAnswer}
+        <div style="color: var(--text-main); margin-bottom: 20px; font-size: 0.93rem;">
+          ${formattedBriefHtml}
         </div>
         <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div>
@@ -396,7 +412,7 @@ async function executeAsk() {
     latestAiAnswer = data.answer || "無回答內容";
     latestSelectedFiles = selectedDocs;
 
-    if (outBox) outBox.innerText = latestAiAnswer;
+    if (outBox) outBox.innerHTML = formatMarkdownText(latestAiAnswer);
     if (toolbar) toolbar.style.display = 'flex';
   } catch (err) {
     if (outBox) outBox.innerText = "❌ 查詢失敗: " + err;
@@ -1291,7 +1307,7 @@ async function executeReview() {
     outputText += `=== AI 偏差診斷與經驗優化建議 ===\n`;
     outputText += data.review_data?.AttributionDiagnosis || '';
 
-    outBox.innerText = outputText;
+    outBox.innerHTML = formatMarkdownText(outputText);
   } catch (err) {
     outBox.innerText = "❌ 復盤診斷失敗: " + err;
   }
