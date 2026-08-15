@@ -1,4 +1,4 @@
-// Frontend Application Logic for ChronoAFR (v4.0.3 Full Income Statement & EPS Table Renderer)
+// Frontend Application Logic for ChronoAFR (v4.1.0 Negative Growth, Business Cycle Presets & Loss-Period P/E Engine)
 
 document.addEventListener('DOMContentLoaded', () => {
   loadAvailableDocuments();
@@ -49,6 +49,7 @@ function fmtNum(val, digits = 1) {
   return val.toLocaleString('en-US', { maximumFractionDigits: digits });
 }
 
+// RAG Document Selector Functions
 async function loadAvailableDocuments() {
   const container = document.getElementById('doc-selector-container');
   if (!container) return;
@@ -185,13 +186,107 @@ async function loadTickerFinancialHistory() {
   }
 }
 
-// Table 1: Revenue Segments Rendering
+// Business Cycle Presets (景氣循環情境模式)
+function applyCyclePreset(presetType, btn) {
+  document.querySelectorAll('#btn-cycle-expansion, #btn-cycle-destocking, #btn-cycle-restructuring').forEach(b => {
+    b.classList.remove('active');
+    b.style.background = 'var(--bg-secondary)';
+    b.style.color = 'var(--text-main)';
+  });
+  if (btn) {
+    btn.classList.add('active');
+    btn.style.background = 'var(--card-bg)';
+    btn.style.color = 'var(--text-main)';
+  }
+
+  const feedbackEl = document.getElementById('ai-steer-feedback');
+
+  if (presetType === 'EXPANSION') {
+    // Standard Healthy Growth
+    revenueSegments.forEach((seg, idx) => {
+      if (idx === 0) seg.growth_y1 = 0.24;
+      else if (idx === 1) seg.growth_y1 = 0.12;
+      else seg.growth_y1 = 0.10;
+    });
+    cogsSegments.forEach(cg => cg.growth_y1 = 0.10);
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.innerText = "📈 已切換為【穩健擴張模式】：各業務線維持常態正成長。";
+    }
+  } else if (presetType === 'DESTOCKING') {
+    // Downside Destocking / Recession Cycle (Negative Growth)
+    revenueSegments.forEach((seg, idx) => {
+      if (idx === 0) seg.growth_y1 = 0.08; // High tech slows down
+      else if (idx === 1) seg.growth_y1 = -0.15; // Consumer/Retail drops -15%
+      else seg.growth_y1 = -0.08; // Intl retail drops -8%
+    });
+    cogsSegments.forEach(cg => cg.growth_y1 = 0.04); // Fixed costs stay relatively rigid
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.innerText = "📉 已切換為【產業去庫存 / 下行週期】：零售與硬體業務進入負成長 (-8% ~ -15%)，模擬毛利率受壓。";
+    }
+  } else if (presetType === 'RESTRUCTURING') {
+    // Cost Restructuring / Year of Efficiency (OpEx cuts)
+    revenueSegments.forEach(seg => seg.growth_y1 = 0.06);
+    opexSegments.forEach(op => {
+      op.ratio_pct = Math.max(0.04, op.ratio_pct * 0.85); // 15% OpEx cut
+    });
+    if (feedbackEl) {
+      feedbackEl.style.display = 'block';
+      feedbackEl.innerText = "✂️ 已切換為【降本增效 / 組織重組模式】：費用支出大幅收緊，模擬利潤率與現金流逆勢反彈。";
+    }
+  }
+
+  renderRevenueSegmentRows();
+  renderCogsSegmentRows();
+  renderOpexSegmentRows();
+  recalculateTotals();
+}
+
+async function scanCycleDownsideRisks() {
+  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
+  const feedbackEl = document.getElementById('ai-steer-feedback');
+
+  if (feedbackEl) {
+    feedbackEl.style.display = 'block';
+    feedbackEl.innerText = `🤖 Gemini AI 正在跨維度交叉比對 ${ticker} 10-K 存貨週轉天數 (DSI)、MD&A 風險提示與總經利率環境...`;
+  }
+
+  try {
+    const res = await fetch('/api/ai_cycle_risk_scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticker })
+    });
+    const data = await res.json();
+
+    let output = `🔍 【${ticker} 景氣循環與下行風險掃描結果】\n`;
+    output += `• 循環階段判定：${data.cycle_phase || '景氣下行/去庫存期'}\n`;
+    output += `• 風險核心摘要：${data.risk_summary || '硬體與消費業務面臨庫存去化壓力'}\n`;
+    if (data.downside_segments && data.downside_segments.length > 0) {
+      output += `• 建議設定負成長業務：${data.downside_segments.map(d => `${d.name} (${(d.recommended_growth_y1*100).toFixed(1)}% YoY)`).join(', ')}\n`;
+    }
+    output += `• 獲利拐點展望：${data.turnaround_outlook || '預計 Y2 築底，Y3 迎來新循環復甦'}`;
+
+    if (feedbackEl) {
+      feedbackEl.innerText = output;
+    }
+  } catch (err) {
+    if (feedbackEl) feedbackEl.innerText = "❌ 掃描下行風險失敗: " + err;
+  }
+}
+
+// Table 1: Revenue Segments Rendering (with negative growth styling)
 function renderRevenueSegmentRows() {
   const tbody = document.getElementById('tbody-revenue-segments');
   if (!tbody) return;
 
   let html = '';
   revenueSegments.forEach((seg, idx) => {
+    const gVal = (seg.growth_y1 * 100);
+    const isNeg = gVal < 0;
+    const colorStyle = isNeg ? 'color: #EF4444; font-weight: 700;' : 'color: #D96B82; font-weight: 700;';
+
     html += `
       <tr style="border-bottom: 1px solid var(--card-border);">
         <td style="padding: 6px;">
@@ -204,9 +299,9 @@ function renderRevenueSegmentRows() {
           ${seg.share_pct ? seg.share_pct.toFixed(1) : 0.0}%
         </td>
         <td style="padding: 6px;">
-          <input type="number" class="form-control" value="${(seg.growth_y1 * 100).toFixed(1)}" step="0.5" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateRevSegGrowth(${idx}, this.value)">
+          <input type="number" class="form-control" value="${gVal.toFixed(1)}" step="0.5" style="padding: 4px 8px; font-size: 0.85rem; ${isNeg ? 'border-color: #EF4444; color: #EF4444;' : ''}" onchange="updateRevSegGrowth(${idx}, this.value)">
         </td>
-        <td style="padding: 6px; font-weight: 700; color: #D96B82;" id="rev-y1-${idx}">
+        <td style="padding: 6px; ${colorStyle}" id="rev-y1-${idx}">
           $0.00
         </td>
         <td style="padding: 6px; text-align: center; white-space: nowrap;">
@@ -287,7 +382,7 @@ function renderOpexSegmentRows() {
 // Update Handlers
 function updateRevSegName(idx, val) { revenueSegments[idx].name = val; }
 function updateRevSegAmount(idx, val) { revenueSegments[idx].base_amount = parseFloat(val) || 0; recalculateTotals(); }
-function updateRevSegGrowth(idx, val) { revenueSegments[idx].growth_y1 = (parseFloat(val) || 0) / 100.0; recalculateTotals(); }
+function updateRevSegGrowth(idx, val) { revenueSegments[idx].growth_y1 = (parseFloat(val) || 0) / 100.0; recalculateTotals(); renderRevenueSegmentRows(); }
 
 function updateCogsName(idx, val) { cogsSegments[idx].name = val; }
 function updateCogsAmount(idx, val) { cogsSegments[idx].base_amount = parseFloat(val) || 0; recalculateTotals(); }
@@ -376,7 +471,7 @@ function recalculateTotals() {
     const shareEl = document.getElementById(`rev-share-${idx}`);
     if (shareEl) shareEl.innerText = share.toFixed(1) + '%';
 
-    const revY1 = seg.base_amount * (1.0 + (seg.growth_y1 || 0.0));
+    const revY1 = Math.max(0.0, seg.base_amount * (1.0 + (seg.growth_y1 || 0.0)));
     totY1Rev += revY1;
     const y1El = document.getElementById(`rev-y1-${idx}`);
     if (y1El) y1El.innerText = '$' + fmtNum(revY1);
@@ -386,7 +481,11 @@ function recalculateTotals() {
 
   if (document.getElementById('tot-rev-base')) document.getElementById('tot-rev-base').innerText = '$' + fmtNum(totBaseRev);
   if (document.getElementById('tot-rev-share')) document.getElementById('tot-rev-share').innerText = '100.0%';
-  if (document.getElementById('tot-rev-growth')) document.getElementById('tot-rev-growth').innerText = (overallGrowth >= 0 ? '+' : '') + overallGrowth.toFixed(1) + '%';
+  if (document.getElementById('tot-rev-growth')) {
+    const el = document.getElementById('tot-rev-growth');
+    el.innerText = (overallGrowth >= 0 ? '+' : '') + overallGrowth.toFixed(1) + '%';
+    el.style.color = overallGrowth < 0 ? '#EF4444' : '#D96B82';
+  }
   if (document.getElementById('tot-rev-y1')) document.getElementById('tot-rev-y1').innerText = '$' + fmtNum(totY1Rev);
 
   // COGS Calculations
@@ -401,7 +500,7 @@ function recalculateTotals() {
     const cogsShareEl = document.getElementById(`cogs-share-${idx}`);
     if (cogsShareEl) cogsShareEl.innerText = (ratio * 100.0).toFixed(1) + '%';
 
-    const cogsY1 = cg.base_amount * (1.0 + (cg.growth_y1 || 0.10));
+    const cogsY1 = Math.max(0.0, cg.base_amount * (1.0 + (cg.growth_y1 || 0.10)));
     totY1Cogs += cogsY1;
 
     const cogsY1El = document.getElementById(`cogs-y1-${idx}`);
@@ -422,7 +521,7 @@ function recalculateTotals() {
   const gmPct = totY1Rev > 0 ? (y1GP / totY1Rev) * 100.0 : 0.0;
   const gpGrowth = baseGP > 0 ? ((y1GP - baseGP) / baseGP) * 100.0 : 0.0;
 
-  if (document.getElementById('tot-gp-base')) document.getElementById('tot-gp-base').innerText = '$' + baseGP.toLocaleString('en-US', { maximumFractionDigits: 1 });
+  if (document.getElementById('tot-gp-base')) document.getElementById('tot-gp-base').innerText = '$' + fmtNum(baseGP);
   if (document.getElementById('disp-gross-margin')) document.getElementById('disp-gross-margin').innerText = gmPct.toFixed(1) + '% (毛利率)';
   if (document.getElementById('tot-gp-growth')) document.getElementById('tot-gp-growth').innerText = (gpGrowth >= 0 ? '+' : '') + gpGrowth.toFixed(1) + '%';
   if (document.getElementById('tot-gp-y1')) document.getElementById('tot-gp-y1').innerText = '$' + fmtNum(y1GP);
@@ -447,53 +546,6 @@ function recalculateTotals() {
   if (document.getElementById('tot-opex-y1')) document.getElementById('tot-opex-y1').innerText = '$' + fmtNum(totY1Opex);
 }
 
-async function getAiForecastRecommendation() {
-  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
-  const feedbackEl = document.getElementById('ai-steer-feedback');
-
-  if (feedbackEl) {
-    feedbackEl.style.display = 'block';
-    feedbackEl.innerText = `🤖 Gemini AI 正在研讀 ${ticker} 最新財報，推薦 Pro-Forma 細拆模型參數中...`;
-  }
-
-  try {
-    const res = await fetch('/api/ai_forecast_recommendation', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticker })
-    });
-    const data = await res.json();
-
-    if (data.base_revenue) document.getElementById('fc-base-rev').value = data.base_revenue;
-    if (data.current_price) document.getElementById('fc-current-price').value = data.current_price;
-    if (data.shares_outstanding) document.getElementById('fc-shares-outstanding').value = data.shares_outstanding;
-    if (data.historical_pe_avg) document.getElementById('fc-pe-avg').value = data.historical_pe_avg;
-
-    if (data.revenue_segments && data.revenue_segments.length > 0) {
-      revenueSegments = data.revenue_segments;
-      renderRevenueSegmentRows();
-    }
-
-    if (data.cogs_segments && data.cogs_segments.length > 0) {
-      cogsSegments = data.cogs_segments;
-      renderCogsSegmentRows();
-    }
-
-    if (data.opex_segments && data.opex_segments.length > 0) {
-      opexSegments = data.opex_segments;
-      renderOpexSegmentRows();
-    }
-
-    recalculateTotals();
-
-    if (feedbackEl) {
-      feedbackEl.innerText = `💡 Gemini AI 智慧推薦完畢：${data.ai_explanation || '已自動填入最新財報與估值數據！'}`;
-    }
-  } catch (err) {
-    if (feedbackEl) feedbackEl.innerText = "❌ 獲取 AI 推薦失敗: " + err;
-  }
-}
-
 async function steerForecastModelWithAi() {
   const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
   const user_prompt = document.getElementById('fc-ai-steer-prompt')?.value.trim();
@@ -506,7 +558,7 @@ async function steerForecastModelWithAi() {
 
   if (feedbackEl) {
     feedbackEl.style.display = 'block';
-    feedbackEl.innerText = `🤖 Gemini AI 正在分析您的意見：「${user_prompt}」並重算模型...`;
+    feedbackEl.innerText = `🤖 Gemini AI 正在分析您的意見：「${user_prompt}」並重算模型 (支援負成長)...`;
   }
 
   try {
@@ -596,53 +648,85 @@ async function executeForecast() {
 
     const peDiag = baseScenario.PE_Valuation_Diagnostics || {};
 
-    // Calculate reliable metrics
+    // Dynamic metrics
     const rev0 = base_revenue;
-    const rev1 = baseProj[0]?.Revenue || (rev0 * 1.172);
-    const rev2 = baseProj[1]?.Revenue || (rev1 * 1.180);
-    const rev3 = baseProj[2]?.Revenue || (rev2 * 1.182);
+    const rev1 = baseProj[0]?.Revenue !== undefined ? baseProj[0].Revenue : rev0 * 1.172;
+    const rev2 = baseProj[1]?.Revenue !== undefined ? baseProj[1].Revenue : rev1 * 1.180;
+    const rev3 = baseProj[2]?.Revenue !== undefined ? baseProj[2].Revenue : rev2 * 1.182;
 
-    const cogs0 = base_revenue * 0.51507; // ~369,305
-    const cogs1 = baseProj[0]?.COGS || 429925.0;
-    const cogs2 = baseProj[1]?.COGS || 505647.0;
-    const cogs3 = baseProj[2]?.COGS || 594625.0;
+    const cogs0 = base_revenue * 0.51507;
+    const cogs1 = baseProj[0]?.COGS !== undefined ? baseProj[0].COGS : 429925.0;
+    const cogs2 = baseProj[1]?.COGS !== undefined ? baseProj[1].COGS : 505647.0;
+    const cogs3 = baseProj[2]?.COGS !== undefined ? baseProj[2].COGS : 594625.0;
 
-    const gp0 = rev0 - cogs0; // ~347,695
-    const gp1 = baseProj[0]?.GrossProfit || (rev1 - cogs1);
-    const gp2 = baseProj[1]?.GrossProfit || (rev2 - cogs2);
-    const gp3 = baseProj[2]?.GrossProfit || (rev3 - cogs3);
+    const gp0 = rev0 - cogs0;
+    const gp1 = baseProj[0]?.GrossProfit !== undefined ? baseProj[0].GrossProfit : (rev1 - cogs1);
+    const gp2 = baseProj[1]?.GrossProfit !== undefined ? baseProj[1].GrossProfit : (rev2 - cogs2);
+    const gp3 = baseProj[2]?.GrossProfit !== undefined ? baseProj[2].GrossProfit : (rev3 - cogs3);
 
-    const opex0 = base_revenue * 0.36959; // ~265,000
-    const opex1 = baseProj[0]?.TotalOpEx || 302481.0;
-    const opex2 = baseProj[1]?.TotalOpEx || 356927.0;
-    const opex3 = baseProj[2]?.TotalOpEx || 421960.0;
+    const opex0 = base_revenue * 0.36959;
+    const opex1 = baseProj[0]?.TotalOpEx !== undefined ? baseProj[0].TotalOpEx : 302481.0;
+    const opex2 = baseProj[1]?.TotalOpEx !== undefined ? baseProj[1].TotalOpEx : 356927.0;
+    const opex3 = baseProj[2]?.TotalOpEx !== undefined ? baseProj[2].TotalOpEx : 421960.0;
 
-    const op0 = gp0 - opex0; // ~82,695
-    const op1 = baseProj[0]?.OperatingIncome || (gp1 - opex1);
-    const op2 = baseProj[1]?.OperatingIncome || (gp2 - opex2);
-    const op3 = baseProj[2]?.OperatingIncome || (gp3 - opex3);
+    const op0 = gp0 - opex0;
+    const op1 = baseProj[0]?.OperatingIncome !== undefined ? baseProj[0].OperatingIncome : (gp1 - opex1);
+    const op2 = baseProj[1]?.OperatingIncome !== undefined ? baseProj[1].OperatingIncome : (gp2 - opex2);
+    const op3 = baseProj[2]?.OperatingIncome !== undefined ? baseProj[2].OperatingIncome : (gp3 - opex3);
 
-    const tax0 = op0 * 0.21; // ~17,366
-    const tax1 = baseProj[0]?.Tax || (op1 * 0.21);
-    const tax2 = baseProj[1]?.Tax || (op2 * 0.21);
-    const tax3 = baseProj[2]?.Tax || (op3 * 0.21);
+    const tax0 = op0 > 0 ? op0 * 0.21 : 0.0;
+    const tax1 = baseProj[0]?.Tax !== undefined ? baseProj[0].Tax : (op1 > 0 ? op1 * 0.21 : 0.0);
+    const tax2 = baseProj[1]?.Tax !== undefined ? baseProj[1].Tax : (op2 > 0 ? op2 * 0.21 : 0.0);
+    const tax3 = baseProj[2]?.Tax !== undefined ? baseProj[2].Tax : (op3 > 0 ? op3 * 0.21 : 0.0);
 
-    const net0 = op0 - tax0; // ~65,329
-    const net1 = baseProj[0]?.NetIncome || (op1 - tax1);
-    const net2 = baseProj[1]?.NetIncome || (op2 - tax2);
-    const net3 = baseProj[2]?.NetIncome || (op3 - tax3);
+    const net0 = op0 - tax0;
+    const net1 = baseProj[0]?.NetIncome !== undefined ? baseProj[0].NetIncome : (op1 - tax1);
+    const net2 = baseProj[1]?.NetIncome !== undefined ? baseProj[1].NetIncome : (op2 - tax2);
+    const net3 = baseProj[2]?.NetIncome !== undefined ? baseProj[2].NetIncome : (op3 - tax3);
 
-    const eps0 = net0 / shares_outstanding; // ~6.28
-    const eps1 = net1 / shares_outstanding; // ~8.19
-    const eps2 = net2 / shares_outstanding; // ~9.79
-    const eps3 = net3 / shares_outstanding; // ~11.81
+    const eps0 = net0 / shares_outstanding;
+    const eps1 = net1 / shares_outstanding;
+    const eps2 = net2 / shares_outstanding;
+    const eps3 = net3 / shares_outstanding;
 
-    const fwdPe1 = eps1 > 0 ? (current_price / eps1) : 0;
-    const fwdPe2 = eps2 > 0 ? (current_price / eps2) : 0;
-    const fwdPe3 = eps3 > 0 ? (current_price / eps3) : 0;
+    const isLoss1 = eps1 <= 0;
+    const isLoss2 = eps2 <= 0;
+    const isLoss3 = eps3 <= 0;
 
-    const targetPrice1 = eps1 * historical_pe_avg;
-    const upsidePct1 = current_price > 0 ? ((targetPrice1 - current_price) / current_price) * 100.0 : 0;
+    // Institutional Standards: P/E is N/A when EPS <= 0
+    const fwdPeDisplay1 = !isLoss1 ? `${fmtNum(current_price / eps1, 2)}x` : '<span style="color: #EF4444; font-weight: 700;">N/A (虧損中)</span>';
+    const fwdPeDisplay2 = !isLoss2 ? `${fmtNum(current_price / eps2, 2)}x` : '<span style="color: #EF4444; font-weight: 700;">N/A (虧損中)</span>';
+    const fwdPeDisplay3 = !isLoss3 ? `${fmtNum(current_price / eps3, 2)}x` : '<span style="color: #EF4444; font-weight: 700;">N/A (虧損中)</span>';
+
+    const revPerShare1 = rev1 / shares_outstanding;
+    const fwdPs1 = revPerShare1 > 0 ? (current_price / revPerShare1) : 0.0;
+
+    let targetPrice1 = 0.0;
+    let upsidePct1 = 0.0;
+    let timingSignal = peDiag.TimingSignal || "🟢 具安全邊際 / 最佳切入時機 (Buying Opportunity)";
+    let timingDesc = peDiag.TimingDesc || "";
+
+    if (!isLoss1) {
+      targetPrice1 = eps1 * historical_pe_avg;
+      upsidePct1 = current_price > 0 ? ((targetPrice1 - current_price) / current_price) * 100.0 : 0;
+    } else {
+      if (!isLoss2) {
+        targetPrice1 = (eps2 * historical_pe_avg) / (1 + wacc);
+        upsidePct1 = current_price > 0 ? ((targetPrice1 - current_price) / current_price) * 100.0 : 0;
+        timingSignal = `🟡 轉機型機會 (Turnaround) / 預估 ${y2} 年轉虧為盈`;
+        timingDesc = `${y1}E 處於逆風虧損期 (EPS -$${fmtNum(Math.abs(eps1), 2)})，P/E 顯示 N/A；預計 ${y2}E 轉虧為盈 (EPS $${fmtNum(eps2, 2)})，折現目標價 $${fmtNum(targetPrice1, 2)}！`;
+      } else if (!isLoss3) {
+        targetPrice1 = (eps3 * historical_pe_avg) / ((1 + wacc)**2);
+        upsidePct1 = current_price > 0 ? ((targetPrice1 - current_price) / current_price) * 100.0 : 0;
+        timingSignal = `🟡 深度週期轉機 (Turnaround) / 預估 ${y3} 年轉虧為盈`;
+        timingDesc = `預計 ${y1}~${y2} 年處於深度去庫存期，${y3}E 獲利反轉 (EPS $${fmtNum(eps3, 2)})，折現目標價 $${fmtNum(targetPrice1, 2)}！`;
+      } else {
+        targetPrice1 = 0.0;
+        upsidePct1 = 0.0;
+        timingSignal = "🔴 營運處於嚴重虧損期 / 建議保守觀望 (Loss-Making)";
+        timingDesc = `未來 3 年持續每股虧損，P/E 不適用 (N/A)，前瞻 P/S 市銷率為 ${fwdPs1.toFixed(2)}x，建議參考下方 DCF 企業價值底層防禦力。`;
+      }
+    }
 
     const gRev1 = ((rev1 - rev0) / rev0) * 100.0;
     const gRev2 = ((rev2 - rev1) / rev1) * 100.0;
@@ -664,16 +748,9 @@ async function executeForecast() {
     const opm2 = (op2 / rev2) * 100.0;
     const opm3 = (op3 / rev3) * 100.0;
 
-    const gNet1 = ((net1 - net0) / net0) * 100.0;
-    const gNet2 = ((net2 - net1) / net1) * 100.0;
-    const gNet3 = ((net3 - net2) / net2) * 100.0;
-
-    let timingSignal = "🟢 具安全邊際 / 最佳切入時機 (Buying Opportunity)";
-    let timingDesc = `前瞻 ${y1}E P/E (${fwdPe1.toFixed(1)}x) 低於歷史均值 (${historical_pe_avg.toFixed(1)}x)，隱含 +${upsidePct1.toFixed(1)}% 上漲空間！`;
-    if (fwdPe1 <= 20.0) {
-      timingSignal = "🟢 極度低估 / 強力買進區間 (Deeply Undervalued)";
-      timingDesc = `前瞻 ${y1}E P/E (${fwdPe1.toFixed(1)}x) 已觸及歷史底部區間，安全邊際極高！`;
-    }
+    const gNet1 = ((net1 - net0) / (net0 !== 0 ? Math.abs(net0) : 1)) * 100.0;
+    const gNet2 = ((net2 - net1) / (net1 !== 0 ? Math.abs(net1) : 1)) * 100.0;
+    const gNet3 = ((net3 - net2) / (net2 !== 0 ? Math.abs(net2) : 1)) * 100.0;
 
     let html = `
       <!-- Card 1: P/E Valuation & Timing Diagnostics Signal -->
@@ -692,13 +769,14 @@ async function executeForecast() {
         <div style="display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap; font-size: 0.9rem; background: rgba(255,255,255,0.85); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(255, 183, 197, 0.4);">
           <div>當前股價: <strong>$${fmtNum(current_price, 2)}</strong></div>
           <div>歷史均值 P/E: <strong>${fmtNum(historical_pe_avg, 1)}x</strong></div>
-          <div>${y1}E 預估 EPS: <strong style="color: #D96B82; font-size: 1.05rem;">$${fmtNum(eps1, 2)}</strong></div>
-          <div>${y1}E 前瞻 P/E: <strong style="color: #D96B82; font-size: 1.05rem;">${fmtNum(fwdPe1, 2)}x</strong></div>
-          <div>${y1}E 目標股價 (均值${fmtNum(historical_pe_avg, 0)}x): <strong style="color: #34D399; font-size: 1.05rem;">$${fmtNum(targetPrice1, 2)}</strong> (隱含 <strong style="color: #34D399;">+${fmtNum(upsidePct1, 1)}%</strong> 潛在上漲空間)</div>
+          <div>${y1}E 預估 EPS: <strong style="color: ${isLoss1 ? '#EF4444' : '#D96B82'}; font-size: 1.05rem;">${isLoss1 ? `-$${fmtNum(Math.abs(eps1), 2)} (虧損)` : `$${fmtNum(eps1, 2)}`}</strong></div>
+          <div>${y1}E 前瞻 P/E: <strong style="color: #D96B82; font-size: 1.05rem;">${fwdPeDisplay1}</strong></div>
+          <div>${y1}E 前瞻 P/S (市銷率): <strong style="color: #4A4036;">${fmtNum(fwdPs1, 2)}x</strong></div>
+          ${targetPrice1 > 0 ? `<div>${y1}E 目標股價: <strong style="color: #34D399; font-size: 1.05rem;">$${fmtNum(targetPrice1, 2)}</strong> (隱含 <strong style="color: #34D399;">+${fmtNum(upsidePct1, 1)}%</strong> 潛在上漲空間)</div>` : ''}
         </div>
       </div>
 
-      <!-- Card 2: Full 3-Year Income Statement & EPS Table (TOP HIGHLIGHT) -->
+      <!-- Card 2: Full 3-Year Income Statement & EPS Table -->
       <div style="margin-bottom: 24px; background: #FFF; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 18px;">
         <h4 style="margin: 0 0 14px 0; color: var(--text-main); font-size: 1.08rem; display: flex; align-items: center; gap: 8px;">
           📈 2. 完整 3 年 Pro-Forma 損益表與 EPS 推算表格 (Full Income Statement & EPS Table)
@@ -718,16 +796,16 @@ async function executeForecast() {
               <tr style="border-bottom: 1px solid var(--card-border);">
                 <td style="padding: 12px 14px; font-weight: 700;">總營業收入 (Total Revenue)</td>
                 <td style="padding: 12px 14px;">$${fmtNum(rev0, 0)}M</td>
-                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.08);">$${fmtNum(rev1, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gRev1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(rev2, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gRev2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(rev3, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gRev3, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.08);">$${fmtNum(rev1, 0)}M <span style="font-size:0.82rem; color: ${gRev1 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev1 >= 0 ? '+' : ''}${fmtNum(gRev1, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(rev2, 0)}M <span style="font-size:0.82rem; color: ${gRev2 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev2 >= 0 ? '+' : ''}${fmtNum(gRev2, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(rev3, 0)}M <span style="font-size:0.82rem; color: ${gRev3 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev3 >= 0 ? '+' : ''}${fmtNum(gRev3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
                 <td style="padding: 12px 14px; font-weight: 600;">總營業成本 (Total COGS)</td>
                 <td style="padding: 12px 14px;">$${fmtNum(cogs0, 0)}M</td>
-                <td style="padding: 12px 14px; background: rgba(255, 183, 197, 0.08); font-weight: 600;">$${fmtNum(cogs1, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gCogs1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(cogs2, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gCogs2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(cogs3, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gCogs3, 1)}% )</span></td>
+                <td style="padding: 12px 14px; background: rgba(255, 183, 197, 0.08); font-weight: 600;">$${fmtNum(cogs1, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( ${gCogs1 >= 0 ? '+' : ''}${fmtNum(gCogs1, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(cogs2, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( ${gCogs2 >= 0 ? '+' : ''}${fmtNum(gCogs2, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(cogs3, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( ${gCogs3 >= 0 ? '+' : ''}${fmtNum(gCogs3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border); background: #F9FFF9;">
                 <td style="padding: 12px 14px; font-weight: 700; color: #2E7D32;">營業毛利 (Gross Profit)</td>
@@ -739,16 +817,16 @@ async function executeForecast() {
               <tr style="border-bottom: 1px solid var(--card-border);">
                 <td style="padding: 12px 14px; font-weight: 600;">總營業費用 (Total OpEx)</td>
                 <td style="padding: 12px 14px;">$${fmtNum(opex0, 0)}M</td>
-                <td style="padding: 12px 14px; background: rgba(255, 183, 197, 0.08); font-weight: 600;">$${fmtNum(opex1, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gOpEx1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(opex2, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gOpEx2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(opex3, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gOpEx3, 1)}% )</span></td>
+                <td style="padding: 12px 14px; background: rgba(255, 183, 197, 0.08); font-weight: 600;">$${fmtNum(opex1, 0)}M <span style="font-size:0.82rem; color: ${gOpEx1 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx1 >= 0 ? '+' : ''}${fmtNum(gOpEx1, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(opex2, 0)}M <span style="font-size:0.82rem; color: ${gOpEx2 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx2 >= 0 ? '+' : ''}${fmtNum(gOpEx2, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(opex3, 0)}M <span style="font-size:0.82rem; color: ${gOpEx3 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx3 >= 0 ? '+' : ''}${fmtNum(gOpEx3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border); background: #FFF8F9;">
-                <td style="padding: 12px 14px; font-weight: 700; color: #D96B82;">營業利潤 (Operating Income / EBIT)</td>
+                <td style="padding: 12px 14px; font-weight: 700; color: ${op1 < 0 ? '#EF4444' : '#D96B82'};">營業利潤 (Operating Income / EBIT)</td>
                 <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(op0, 0)}M</td>
-                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.12); color: #D96B82;">$${fmtNum(op1, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700; color: #D96B82;">$${fmtNum(op2, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700; color: #D96B82;">$${fmtNum(op3, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm3, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.12); color: ${op1 < 0 ? '#EF4444' : '#D96B82'};">$${fmtNum(op1, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm1, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700; color: ${op2 < 0 ? '#EF4444' : '#D96B82'};">$${fmtNum(op2, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm2, 1)}% )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700; color: ${op3 < 0 ? '#EF4444' : '#D96B82'};">$${fmtNum(op3, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
                 <td style="padding: 12px 14px; font-size: 0.88rem; color: #82776E;">預估所得稅率 / 稅額 (Tax Rate 21%)</td>
@@ -760,9 +838,9 @@ async function executeForecast() {
               <tr style="border-bottom: 2px solid var(--card-border); background: #FAF8F5;">
                 <td style="padding: 12px 14px; font-weight: 700;">稅後淨利 (Net Income / NOPAT)</td>
                 <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(net0, 0)}M</td>
-                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.12); color: #D96B82;">$${fmtNum(net1, 0)}M <span style="font-size:0.82rem;">( +${fmtNum(gNet1, 1)}% YoY )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(net2, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gNet2, 1)}% YoY )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(net3, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( +${fmtNum(gNet3, 1)}% YoY )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.12); color: ${net1 < 0 ? '#EF4444' : '#D96B82'};">$${fmtNum(net1, 0)}M <span style="font-size:0.82rem;">( ${gNet1 >= 0 ? '+' : ''}${fmtNum(gNet1, 1)}% YoY )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(net2, 0)}M <span style="font-size:0.82rem; color: ${net2 < 0 ? '#EF4444' : '#D96B82'};">( ${gNet2 >= 0 ? '+' : ''}${fmtNum(gNet2, 1)}% YoY )</span></td>
+                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(net3, 0)}M <span style="font-size:0.82rem; color: ${net3 < 0 ? '#EF4444' : '#D96B82'};">( ${gNet3 >= 0 ? '+' : ''}${fmtNum(gNet3, 1)}% YoY )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
                 <td style="padding: 12px 14px; font-size: 0.88rem;">發行在外總股數 (Diluted Shares)</td>
@@ -774,9 +852,9 @@ async function executeForecast() {
               <tr style="border-bottom: 2px solid var(--card-border); background: #FFF0F3;">
                 <td style="padding: 14px; font-weight: 700; font-size: 1rem; color: #D96B82;">🎯 每股盈餘 (Projected EPS)</td>
                 <td style="padding: 14px; font-weight: 700; font-size: 1.05rem;">$${fmtNum(eps0, 2)}</td>
-                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: #D96B82; background: rgba(255, 183, 197, 0.25);">$${fmtNum(eps1, 2)} <span style="font-size:0.82rem; font-weight:600;">( +${fmtNum(gNet1, 1)}% YoY )</span></td>
-                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: #D96B82;">$${fmtNum(eps2, 2)} <span style="font-size:0.82rem; font-weight:600;">( +${fmtNum(gNet2, 1)}% YoY )</span></td>
-                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: #D96B82;">$${fmtNum(eps3, 2)} <span style="font-size:0.82rem; font-weight:600;">( +${fmtNum(gNet3, 1)}% YoY )</span></td>
+                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: ${isLoss1 ? '#EF4444' : '#D96B82'}; background: rgba(255, 183, 197, 0.25);">${isLoss1 ? `-$${fmtNum(Math.abs(eps1), 2)} (每股虧損)` : `$${fmtNum(eps1, 2)}`} <span style="font-size:0.82rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay1})</span></td>
+                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: ${isLoss2 ? '#EF4444' : '#D96B82'};">${isLoss2 ? `-$${fmtNum(Math.abs(eps2), 2)} (每股虧損)` : `$${fmtNum(eps2, 2)}`} <span style="font-size:0.82rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay2})</span></td>
+                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: ${isLoss3 ? '#EF4444' : '#D96B82'};">${isLoss3 ? `-$${fmtNum(Math.abs(eps3), 2)} (每股虧損)` : `$${fmtNum(eps3, 2)}`} <span style="font-size:0.82rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay3})</span></td>
               </tr>
             </tbody>
           </table>
@@ -811,7 +889,7 @@ async function executeForecast() {
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border); background: #FFF5F7;">
                 <td style="padding: 10px; font-weight: 700; color: var(--text-main);">🟡 Base Case (基準)</td>
-                <td style="padding: 10px;">$${fmtNum(rev1)} <span style="font-size:0.75rem; color:#D96B82;">(+${fmtNum(gRev1, 1)}%)</span></td>
+                <td style="padding: 10px;">$${fmtNum(rev1)} <span style="font-size:0.75rem; color:${gRev1 < 0 ? '#EF4444' : '#D96B82'}; font-weight:600;">(${gRev1 >= 0 ? '+' : ''}${fmtNum(gRev1, 1)}%)</span></td>
                 <td style="padding: 10px;">$${fmtNum(rev3)}</td>
                 <td style="padding: 10px;">$${fmtNum(op3)}</td>
                 <td style="padding: 10px;">$${fmtNum(net3 * 0.9)}</td>

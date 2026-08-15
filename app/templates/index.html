@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChronoAFR | 投資分析、前瞻預測與復盤系統</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=4.0.3">
+  <link rel="stylesheet" href="/static/css/style.css?v=4.1.0">
 </head>
 <body>
 
@@ -150,13 +150,22 @@
             </div>
           </div>
 
+          <!-- Cycle Presets & Downside Risk Scanner Bar -->
+          <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">🔄 景氣循環情境快速套用：</span>
+            <button type="button" class="btn-sm active" id="btn-cycle-expansion" onclick="applyCyclePreset('EXPANSION', this)">📈 穩健擴張模式 (常態成長)</button>
+            <button type="button" class="btn-sm" id="btn-cycle-destocking" onclick="applyCyclePreset('DESTOCKING', this)">📉 產業去庫存 / 下行週期 (負成長/衰退)</button>
+            <button type="button" class="btn-sm" id="btn-cycle-restructuring" onclick="applyCyclePreset('RESTRUCTURING', this)">✂️ 降本增效 / 費用收縮模式</button>
+            <button type="button" class="btn-sm" style="background: #FFF0F3; border-color: var(--primary-pink); color: #D96B82; font-weight: 600;" onclick="scanCycleDownsideRisks()">🤖 AI 掃描下行風險與負成長</button>
+          </div>
+
           <!-- AI Steering Box -->
           <div style="background: #FFF5F7; border: 1px solid rgba(255, 183, 197, 0.6); padding: 14px; border-radius: var(--radius-md); margin-bottom: 20px;">
             <label style="font-weight: 600; font-size: 0.9rem; color: #D96B82; display: flex; align-items: center; gap: 6px;">
-              💬 提出對 AI 的微調與增刪指示 (例: 把 AWS 占比改為 45%，新增第 4 項「 Robotaxi 營收 $5,000M 成長 50%」)
+              💬 提出對 AI 的微調與增刪指示 (例: 把 AWS 占比改為 45%，北美電商設定 -10% 負成長，新增第 4 項「Robotaxi」)
             </label>
             <div style="display: flex; gap: 8px; margin-top: 8px;">
-              <input type="text" id="fc-ai-steer-prompt" class="form-control" placeholder="請輸入對模型項目的微調或增刪意見..." style="background: #FFF;">
+              <input type="text" id="fc-ai-steer-prompt" class="form-control" placeholder="請輸入對模型項目的微調或增刪意見 (支援負成長)..." style="background: #FFF;">
               <button type="button" class="btn-primary" style="width: auto; padding: 0 20px; font-size: 0.88rem; white-space: nowrap;" onclick="steerForecastModelWithAi()">🤖 讓 AI 重新拆解與修算</button>
             </div>
             <div id="ai-steer-feedback" style="font-size: 0.82rem; color: #4A4036; margin-top: 6px; display: none;"></div>
@@ -328,6 +337,6 @@
 
   </div>
 
-  <script src="/static/js/app.js?v=4.0.3"></script>
+  <script src="/static/js/app.js?v=4.1.0"></script>
 </body>
 </html>

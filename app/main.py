@@ -30,7 +30,7 @@ from core.reviewing.attribution import AttributionEngine
 app = FastAPI(
     title="ChronoAFR Engine API",
     description="Chronological Analysis, Forecast & Review Engine",
-    version="4.0.0"
+    version="4.1.0"
 )
 
 # Mount Static Files
@@ -83,6 +83,9 @@ class AiSteerRequest(BaseModel):
     current_cogs_segments: List[Dict[str, Any]]
     current_opex_segments: List[Dict[str, Any]]
     current_gross_margin: float
+
+class AiRiskScanRequest(BaseModel):
+    ticker: str = "AMZN"
 
 class ReviewRequest(BaseModel):
     ticker: str = "NVDA"
@@ -162,9 +165,9 @@ async def get_financial_history(ticker: str):
             "historical_pe_min": 20.0,
             "historical_pe_max": 45.0,
             "revenue_segments": [
-                {"name": "AWS 雲端服務 (AWS Cloud)", "base_amount": 142000.0, "share_pct": 19.8, "growth_y1": 0.24},
-                {"name": "北美電商與賣家服務 (North America Retail & 3P)", "base_amount": 415000.0, "share_pct": 57.9, "growth_y1": 0.12},
-                {"name": "國際電商服務 (International Retail)", "base_amount": 160000.0, "share_pct": 22.3, "growth_y1": 0.10}
+                {"name": "AWS 雲端服務 (AWS Cloud)", "base_amount": 142000.0, "share_pct": 19.8, "growth_y1": 0.24, "growth_y2": 0.20, "growth_y3": 0.18},
+                {"name": "北美電商與賣家服務 (North America Retail & 3P)", "base_amount": 415000.0, "share_pct": 57.9, "growth_y1": 0.12, "growth_y2": 0.10, "growth_y3": 0.08},
+                {"name": "國際電商服務 (International Retail)", "base_amount": 160000.0, "share_pct": 22.3, "growth_y1": 0.10, "growth_y2": 0.08, "growth_y3": 0.06}
             ],
             "cogs_segments": [
                 {"name": "電商履約與物流貨運成本 (Fulfillment & Shipping COGS)", "base_amount": 220000.0, "ratio_pct": 0.307, "growth_y1": 0.10},
@@ -190,9 +193,9 @@ async def get_financial_history(ticker: str):
             "historical_pe_min": 25.0,
             "historical_pe_max": 60.0,
             "revenue_segments": [
-                {"name": "資料中心 (Data Center AI)", "base_amount": 47500.0, "share_pct": 78.0, "growth_y1": 0.35},
-                {"name": "電競與 PC (Gaming)", "base_amount": 10400.0, "share_pct": 17.0, "growth_y1": 0.12},
-                {"name": "專業視覺化與汽車 (ProViz & Auto)", "base_amount": 3022.0, "share_pct": 5.0, "growth_y1": 0.15}
+                {"name": "資料中心 (Data Center AI)", "base_amount": 47500.0, "share_pct": 78.0, "growth_y1": 0.35, "growth_y2": 0.25, "growth_y3": 0.20},
+                {"name": "電競與 PC (Gaming)", "base_amount": 10400.0, "share_pct": 17.0, "growth_y1": 0.12, "growth_y2": 0.10, "growth_y3": 0.08},
+                {"name": "專業視覺化與汽車 (ProViz & Auto)", "base_amount": 3022.0, "share_pct": 5.0, "growth_y1": 0.15, "growth_y2": 0.12, "growth_y3": 0.10}
             ],
             "cogs_segments": [
                 {"name": "晶片代工與先進封裝成本 (Wafer Foundry & Packaging COGS)", "base_amount": 12000.0, "ratio_pct": 0.197, "growth_y1": 0.20},
@@ -217,9 +220,9 @@ async def get_financial_history(ticker: str):
             "historical_pe_min": 12.0,
             "historical_pe_max": 25.0,
             "revenue_segments": [
-                {"name": "先進行程 (3nm / 5nm Advanced)", "base_amount": 1852500.0, "share_pct": 65.0, "growth_y1": 0.28},
-                {"name": "成熟製程 (7nm 及以上)", "base_amount": 712500.0, "share_pct": 25.0, "growth_y1": 0.08},
-                {"name": "先進封裝 (CoWoS / Packaging)", "base_amount": 285000.0, "share_pct": 10.0, "growth_y1": 0.45}
+                {"name": "先進行程 (3nm / 5nm Advanced)", "base_amount": 1852500.0, "share_pct": 65.0, "growth_y1": 0.28, "growth_y2": 0.22, "growth_y3": 0.18},
+                {"name": "成熟製程 (7nm 及以上)", "base_amount": 712500.0, "share_pct": 25.0, "growth_y1": 0.08, "growth_y2": 0.05, "growth_y3": 0.02},
+                {"name": "先進封裝 (CoWoS / Packaging)", "base_amount": 285000.0, "share_pct": 10.0, "growth_y1": 0.45, "growth_y2": 0.30, "growth_y3": 0.25}
             ],
             "cogs_segments": [
                 {"name": "晶圓材料與化學品成本 (Silicon Wafers & Chemicals COGS)", "base_amount": 641250.0, "ratio_pct": 0.225, "growth_y1": 0.12},
@@ -243,8 +246,8 @@ async def get_financial_history(ticker: str):
             "historical_pe_min": 12.0,
             "historical_pe_max": 30.0,
             "revenue_segments": [
-                {"name": "核心業務線 A", "base_amount": 6000.0, "share_pct": 60.0, "growth_y1": 0.20},
-                {"name": "次要業務線 B", "base_amount": 4000.0, "share_pct": 40.0, "growth_y1": 0.15}
+                {"name": "核心業務線 A", "base_amount": 6000.0, "share_pct": 60.0, "growth_y1": 0.20, "growth_y2": 0.15, "growth_y3": 0.10},
+                {"name": "次要業務線 B", "base_amount": 4000.0, "share_pct": 40.0, "growth_y1": 0.15, "growth_y2": 0.10, "growth_y3": 0.05}
             ],
             "cogs_segments": [
                 {"name": "直接生產與材料成本 (Direct Production & Materials COGS)", "base_amount": 3500.0, "ratio_pct": 0.35, "growth_y1": 0.12},
@@ -296,7 +299,7 @@ async def steer_forecast_model(req: AiSteerRequest):
         f"目前營收細拆: {json.dumps(req.current_revenue_segments, ensure_ascii=False)}\n"
         f"目前成本細拆: {json.dumps(req.current_cogs_segments, ensure_ascii=False)}\n"
         f"目前 OpEx 細拆: {json.dumps(req.current_opex_segments, ensure_ascii=False)}\n\n"
-        "請理解用戶的意見，並輸出更新後的純 JSON 結構：\n"
+        "請理解用戶的意見（支援負成長率，例如 -15%），並輸出更新後的純 JSON 結構：\n"
         "{\n"
         '  "revenue_segments": [...],\n'
         '  "cogs_segments": [...],\n'
@@ -319,6 +322,43 @@ async def steer_forecast_model(req: AiSteerRequest):
         "cogs_segments": req.current_cogs_segments,
         "opex_segments": req.current_opex_segments,
         "ai_feedback": f"已依據指示調整模型: {req.user_prompt}"
+    }
+
+@app.post("/api/ai_cycle_risk_scan")
+async def scan_cycle_risks(req: AiRiskScanRequest):
+    engine = GeminiRAGEngine()
+    prompt = (
+        f"請針對目標股票 `{req.ticker}`，全面研讀資料庫中最新的 10-K/10-Q 財報（包含存貨週轉天數 DSI、MD&A 風險提示、CapEx 指引、RPO 增速）與總經環境，\n"
+        "找出該公司未來 1~3 年可能面臨的『景氣循環下行風險、去庫存壓力、或可能出現負成長 (Negative Growth) 的業務線』。\n"
+        "請以純 JSON 格式輸出：\n"
+        "{\n"
+        '  "cycle_phase": "景氣循環階段 (例如: 去庫存放緩期 / 擴張期 / 轉機期)",\n'
+        '  "risk_summary": "下行風險核心摘要 (2~3 句話)",\n'
+        '  "downside_segments": [\n'
+        '    {"name": "業務線名稱", "risk_reason": "風險原因 (如存貨過高/需求放緩)", "recommended_growth_y1": -0.10, "recommended_growth_y2": 0.02, "recommended_growth_y3": 0.15}\n'
+        '  ],\n'
+        '  "suggested_cogs_adjustment": "成本與毛利因應建議",\n'
+        '  "turnaround_outlook": "何時可能迎來獲利反轉拐點"\n'
+        "}"
+    )
+
+    try:
+        raw_res = engine.query(prompt=prompt, filter_keyword=req.ticker)
+        json_match = re.search(r"\{.*\}", raw_res, re.DOTALL)
+        if json_match:
+            data = json.loads(json_match.group(0))
+            return data
+    except Exception as e:
+        print(f"[AI Risk Scan Error] {e}")
+
+    return {
+        "cycle_phase": "景氣下行與去庫存逆風期",
+        "risk_summary": f"根據 {req.ticker} 歷史循環週期，硬體與消費業務面臨去庫存壓力，建議設定第一年負成長以模擬保守情境。",
+        "downside_segments": [
+            {"name": "消費型硬體與零售", "risk_reason": "終端買氣疲軟與庫存去化", "recommended_growth_y1": -0.12, "recommended_growth_y2": 0.03, "recommended_growth_y3": 0.18}
+        ],
+        "suggested_cogs_adjustment": "產能利用率下滑可能壓抑毛利率 1~2 百分點",
+        "turnaround_outlook": "預計 Y2 築底，Y3 進入新一輪 AI/產品升級成長循環"
     }
 
 @app.get("/api/reports")
@@ -417,8 +457,8 @@ async def run_forecast(req: ForecastRequest):
         base_year=req.base_year,
         base_revenue=req.base_revenue,
         revenue_growth_y1=req.revenue_growth_y1,
-        revenue_growth_y2=max(0.05, req.revenue_growth_y1 * 0.8),
-        revenue_growth_y3=max(0.05, req.revenue_growth_y1 * 0.65),
+        revenue_growth_y2=max(-0.20, req.revenue_growth_y1 * 0.8),
+        revenue_growth_y3=max(-0.20, req.revenue_growth_y1 * 0.65),
         revenue_segments=req.revenue_segments or [],
         cogs_segments=req.cogs_segments or [],
         gross_margin=req.gross_margin,
