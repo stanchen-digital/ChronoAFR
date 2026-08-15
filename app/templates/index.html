@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChronoAFR | 投資分析、前瞻預測與復盤系統</title>
+  <link rel="stylesheet" href="/static/css/style.css?v=4.0.3">
+</head>
+<body>
+
+  <div class="dashboard-container">
+    <!-- Header -->
+    <header class="dashboard-header">
+      <div class="brand">
+        <div class="brand-icon">⏳</div>
+        <div>
+          <h1 class="brand-title">ChronoAFR 投資系統</h1>
+          <p class="brand-subtitle">Chrono Analysis, Forecast & Review Engine</p>
+        </div>
+      </div>
+      <div class="status-badge">🟢 系統線上連線中</div>
+    </header>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('tab-fetch')">📥 1. 數據擷取 & NotebookLM</button>
+      <button class="tab-btn" onclick="switchTab('tab-rag')">🧠 2. AI 財報問答 (RAG)</button>
+      <button class="tab-btn" onclick="switchTab('tab-forecast')">🔮 3. 前瞻財務預測 (Forecasting)</button>
+      <button class="tab-btn" onclick="switchTab('tab-review')">⚖️ 4. 預測復盤診斷 (Reviewing)</button>
+      <button class="tab-btn" onclick="switchTab('tab-reports')">📁 5. 報告與同步資料庫</button>
+    </nav>
+
+    <!-- Tab 1: Data Fetching -->
+    <div id="tab-fetch" class="tab-panel active">
+      <div class="card-grid">
+        <div class="glass-card">
+          <h3 class="card-title">📥 官方數據抓取面板</h3>
+          <div class="form-group">
+            <label>股票代號 (美股如 NVDA / 台股如 2330)</label>
+            <input type="text" id="fetch-ticker" class="form-control" value="NVDA">
+          </div>
+          <div class="form-group">
+            <label>數據來源 (Data Sources)</label>
+            <select id="fetch-source" class="form-control">
+              <option value="all">全數據源 (美股 SEC + 台股 MOPS + FRED 總經 + Google Drive 雲端)</option>
+              <option value="sec">僅美股 SEC EDGAR (10-K/10-Q 年報季報)</option>
+              <option value="mops">僅台股 MOPS (公開資訊觀測站月營收)</option>
+              <option value="fred">僅 FRED (聯準會利率/美債/CPI/失業率)</option>
+              <option value="gdrive">僅 Google Drive (個人上傳個研/財報 PDF)</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="executeFetch()">🚀 開始抓取並解析 Markdown</button>
+        </div>
+
+        <div class="glass-card">
+          <h3 class="card-title">📊 抓取執行結果</h3>
+          <div id="fetch-output" class="output-box">尚未執行抓取。點擊左側按鈕開始擷取美股/台股與總經數據。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Gemini RAG Chat -->
+    <div id="tab-rag" class="tab-panel">
+      <div class="card-grid">
+        <div class="glass-card">
+          <h3 class="card-title">🧠 Gemini AI 財報與總經對話引擎</h3>
+          <div class="form-group">
+            <label style="display: flex; justify-content: space-between; align-items: center;">
+              <span>🎯 指定研讀參考文件 (可多選，未選則載入相關檔案)</span>
+              <span id="selected-count-badge" class="slider-value" style="font-size: 0.8rem;">已選擇 0 個檔案</span>
+            </label>
+            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+              <button type="button" class="btn-sm" onclick="selectAllDocs(true)">全選</button>
+              <button type="button" class="btn-sm" onclick="selectAllDocs(false)">清空</button>
+              <button type="button" class="btn-sm" onclick="selectGDriveDocsOnly()">僅 Google Drive 文件</button>
+              <button type="button" class="btn-sm" onclick="loadAvailableDocuments()">🔄 重新整理</button>
+            </div>
+            <!-- Search & Type Filters Bar -->
+            <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+              <input type="text" id="doc-search-input" class="form-control" style="flex: 1; min-width: 220px; padding: 6px 12px; font-size: 0.85rem;" placeholder="🔍 輸入關鍵字即時搜尋檔名 (如 Amazon, 2330, PDF)..." oninput="filterDocList()">
+              <div style="display: flex; gap: 4px; align-items: center;">
+                <button type="button" class="btn-sm badge-btn active" onclick="setDocCategoryFilter('ALL', this)">全部</button>
+                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('PDF', this)">📄 PDF</button>
+                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('EXCEL', this)">📊 Excel/CSV</button>
+                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('DOCX', this)">📝 Word/MD</button>
+              </div>
+            </div>
+            <div id="doc-selector-container" style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 12px; max-height: 180px; overflow-y: auto;">
+              載入檔案清單中...
+            </div>
+          </div>
+          <div class="form-group">
+            <label>請輸入您的投資分析問題</label>
+            <textarea id="rag-query" class="form-control" rows="4">請詳細總結 Amazon (AMZN) 最新 Q2 財報的淨營收、AWS 成長率、營業利潤與 AI 投資重點。</textarea>
+          </div>
+          <button class="btn-primary" onclick="executeAsk()">💡 傳送問題給 Gemini AI</button>
+        </div>
+
+        <div class="glass-card">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+            <h3 class="card-title" style="margin-bottom: 0;">💬 AI 分析回答</h3>
+            <div id="ai-answer-toolbar" style="display: none; gap: 6px; align-items: center;">
+              <button type="button" class="btn-sm" onclick="downloadAnswerMarkdown()">📥 下載 .md 報告</button>
+              <button type="button" class="btn-sm" onclick="copyAnswerMarkdown()">📋 複製內文</button>
+              <button type="button" class="btn-sm" onclick="syncAnswerToNotebookLM()">☁️ 同步至 NotebookLM</button>
+            </div>
+          </div>
+          <div id="rag-output" class="output-box">Waiting for query...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Forecasting Workbench -->
+    <div id="tab-forecast" class="tab-panel">
+      <div class="card-grid">
+        <div class="glass-card" style="grid-column: span 2;">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+            <h3 class="card-title" style="margin-bottom: 0;">🔮 前瞻財務預測與動態細拆工作台 (Bottom-Up Forecast Engine)</h3>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-sm" onclick="loadTickerFinancialHistory()">📥 自動帶入歷史數據</button>
+              <button type="button" class="btn-sm" style="background: var(--primary-pink); font-weight: 700;" onclick="getAiForecastRecommendation()">🤖 AI 智慧研讀並推薦參數</button>
+            </div>
+          </div>
+
+          <!-- Target Ticker Selector & Valuation Bar -->
+          <div style="display: flex; gap: 12px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; background: #FDFBF9; padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--card-border);">
+            <div style="flex: 1; min-width: 140px;">
+              <label style="font-size: 0.85rem; font-weight: 600;">目標股票代號</label>
+              <input type="text" id="fc-ticker" class="form-control" value="AMZN" onchange="loadTickerFinancialHistory()">
+            </div>
+            <div style="flex: 1; min-width: 150px;">
+              <label style="font-size: 0.85rem; font-weight: 600;">基準年總營收 ($M)</label>
+              <input type="number" id="fc-base-rev" class="form-control" value="717000" onchange="recalculateTotals()">
+            </div>
+            <div style="flex: 1; min-width: 130px;">
+              <label style="font-size: 0.85rem; font-weight: 600;">當前股價 ($)</label>
+              <input type="number" id="fc-current-price" class="form-control" value="185.0" step="0.5">
+            </div>
+            <div style="flex: 1; min-width: 140px;">
+              <label style="font-size: 0.85rem; font-weight: 600;">總股數 (M 股)</label>
+              <input type="number" id="fc-shares-outstanding" class="form-control" value="10400" step="10">
+            </div>
+            <div style="flex: 1; min-width: 130px;">
+              <label style="font-size: 0.85rem; font-weight: 600;">歷史均值 P/E (x)</label>
+              <input type="number" id="fc-pe-avg" class="form-control" value="35.0" step="1">
+            </div>
+            <div style="flex: 1; min-width: 120px;">
+              <label style="font-size: 0.85rem; font-weight: 600;">折現率 WACC (%)</label>
+              <input type="number" id="fc-wacc" class="form-control" value="9.0" step="0.5">
+            </div>
+          </div>
+
+          <!-- AI Steering Box -->
+          <div style="background: #FFF5F7; border: 1px solid rgba(255, 183, 197, 0.6); padding: 14px; border-radius: var(--radius-md); margin-bottom: 20px;">
+            <label style="font-weight: 600; font-size: 0.9rem; color: #D96B82; display: flex; align-items: center; gap: 6px;">
+              💬 提出對 AI 的微調與增刪指示 (例: 把 AWS 占比改為 45%，新增第 4 項「 Robotaxi 營收 $5,000M 成長 50%」)
+            </label>
+            <div style="display: flex; gap: 8px; margin-top: 8px;">
+              <input type="text" id="fc-ai-steer-prompt" class="form-control" placeholder="請輸入對模型項目的微調或增刪意見..." style="background: #FFF;">
+              <button type="button" class="btn-primary" style="width: auto; padding: 0 20px; font-size: 0.88rem; white-space: nowrap;" onclick="steerForecastModelWithAi()">🤖 讓 AI 重新拆解與修算</button>
+            </div>
+            <div id="ai-steer-feedback" style="font-size: 0.82rem; color: #4A4036; margin-top: 6px; display: none;"></div>
+          </div>
+
+          <!-- Table 1: Revenue Segments -->
+          <div class="form-group" style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; font-size: 1rem; color: var(--text-main);">1. 營業收入業務線細拆 (Revenue Segment Breakdown)</h4>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn-sm" onclick="addRevenueSegmentRow()">➕ 新增業務線</button>
+                <button type="button" class="btn-sm" onclick="normalizeRevenueShares()">⚖️ 占比歸一化 (100%)</button>
+              </div>
+            </div>
+            <div style="overflow-x: auto;">
+              <table id="tbl-revenue-segments" style="width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left;">
+                <thead>
+                  <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--card-border);">
+                    <th style="padding: 8px;">業務線名稱 (Segment Name)</th>
+                    <th style="padding: 8px; width: 140px;">基準金額 ($M)</th>
+                    <th style="padding: 8px; width: 120px;">佔總營收比重 (%)</th>
+                    <th style="padding: 8px; width: 120px;">Y1 預估成長率 (%)</th>
+                    <th style="padding: 8px; width: 140px;">預估 Y1 營收 ($M)</th>
+                    <th style="padding: 8px; width: 90px; text-align: center;">操作 (➕/🗑️)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-revenue-segments">
+                  <!-- Dynamic Rows -->
+                </tbody>
+                <tfoot>
+                  <tr style="font-weight: 700; background: #FAF8F5; border-top: 2px solid var(--card-border);">
+                    <td style="padding: 10px;">總營業收入 (Total Revenue)</td>
+                    <td style="padding: 10px;" id="tot-rev-base">$0.00</td>
+                    <td style="padding: 10px;" id="tot-rev-share">100.0%</td>
+                    <td style="padding: 10px;" id="tot-rev-growth">+0.0%</td>
+                    <td style="padding: 10px;" id="tot-rev-y1">$0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Table 2: COGS Breakdown & Gross Margin -->
+          <div class="form-group" style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; font-size: 1rem; color: var(--text-main);">2. 營業成本與毛利細拆 (Operating Cost COGS & Gross Margin)</h4>
+              <button type="button" class="btn-sm" onclick="addCogsSegmentRow()">➕ 新增成本項目</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table id="tbl-cogs-segments" style="width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left;">
+                <thead>
+                  <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--card-border);">
+                    <th style="padding: 8px;">成本項目名稱 (COGS Item Name)</th>
+                    <th style="padding: 8px; width: 140px;">基準金額 ($M)</th>
+                    <th style="padding: 8px; width: 120px;">佔總營收比重 (%)</th>
+                    <th style="padding: 8px; width: 120px;">Y1 預估成長率 (%)</th>
+                    <th style="padding: 8px; width: 140px;">預估 Y1 成本 ($M)</th>
+                    <th style="padding: 8px; width: 90px; text-align: center;">操作 (➕/🗑️)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-cogs-segments">
+                  <!-- Dynamic COGS Rows -->
+                </tbody>
+                <tfoot>
+                  <tr style="font-weight: 700; background: #FAF8F5; border-top: 2px solid var(--card-border);">
+                    <td style="padding: 8px;">總營業成本 (Total COGS)</td>
+                    <td style="padding: 8px;" id="tot-cogs-base">$0.00</td>
+                    <td style="padding: 8px;" id="tot-cogs-share">0.0%</td>
+                    <td style="padding: 8px;" id="tot-cogs-growth">+0.0%</td>
+                    <td style="padding: 8px;" id="tot-cogs-y1">$0.00</td>
+                    <td></td>
+                  </tr>
+                  <tr style="font-weight: 700; background: #FFF5F7; color: #34D399; border-top: 1px solid var(--card-border);">
+                    <td style="padding: 8px;">推算營業毛利 (Gross Profit)</td>
+                    <td style="padding: 8px;" id="tot-gp-base">$0.00</td>
+                    <td style="padding: 8px;" id="disp-gross-margin">48.5% (毛利率)</td>
+                    <td style="padding: 8px;" id="tot-gp-growth">+0.0%</td>
+                    <td style="padding: 8px;" id="tot-gp-y1">$0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <!-- Table 3: OpEx Breakdown -->
+          <div class="form-group" style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; font-size: 1rem; color: var(--text-main);">3. 營業費用三項拆解 (OpEx Breakdown: R&D, S&M, G&A)</h4>
+              <button type="button" class="btn-sm" onclick="addOpexSegmentRow()">➕ 新增費用項目</button>
+            </div>
+            <div style="overflow-x: auto;">
+              <table id="tbl-opex-segments" style="width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left;">
+                <thead>
+                  <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--card-border);">
+                    <th style="padding: 8px;">費用項目名稱 (OpEx Category)</th>
+                    <th style="padding: 8px; width: 140px;">基準金額 ($M)</th>
+                    <th style="padding: 8px; width: 140px;">佔營收比重 (%)</th>
+                    <th style="padding: 8px; width: 140px;">預估 Y1 費用金額 ($M)</th>
+                    <th style="padding: 8px; width: 90px; text-align: center;">操作 (➕/🗑️)</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-opex-segments">
+                  <!-- Dynamic OpEx Rows -->
+                </tbody>
+                <tfoot>
+                  <tr style="font-weight: 700; background: #FAF8F5; border-top: 2px solid var(--card-border);">
+                    <td style="padding: 10px;">總營業費用 (Total OpEx)</td>
+                    <td style="padding: 10px;" id="tot-opex-base">$0.00</td>
+                    <td style="padding: 10px;" id="tot-opex-ratio">0.0%</td>
+                    <td style="padding: 10px;" id="tot-opex-y1">$0.00</td>
+                    <td></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </div>
+
+          <button class="btn-primary" style="font-size: 1.05rem; padding: 14px;" onclick="executeForecast()">⚡ 計算 3 年 Pro-Forma 三表與 Bull/Base/Bear DCF 估值</button>
+        </div>
+
+        <div class="glass-card" style="grid-column: span 2;">
+          <h3 class="card-title">📊 預測與 Bull/Base/Bear 多情境估值結果</h3>
+          <div id="forecast-output" class="output-box">調整上方表格參數並點擊按鈕，即時運算 Pro-Forma 損益表、自由現金流與 DCF 估值。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 4: Post-Mortem Reviewing -->
+    <div id="tab-review" class="tab-panel">
+      <div class="card-grid">
+        <div class="glass-card">
+          <h3 class="card-title">⚖️ 預測復盤與偏差診斷</h3>
+          <div class="form-group">
+            <label>比對股票代號</label>
+            <input type="text" id="rv-ticker" class="form-control" value="NVDA">
+          </div>
+          <div class="form-group">
+            <label>開獎實際營收 ($ Millions)</label>
+            <input type="number" id="rv-actual-rev" class="form-control" value="78000">
+          </div>
+          <div class="form-group">
+            <label>開獎實際營業利潤 ($ Millions)</label>
+            <input type="number" id="rv-actual-op" class="form-control" value="44500">
+          </div>
+          <div class="form-group">
+            <label>開獎實際毛利率 (%)</label>
+            <input type="number" id="rv-actual-gm" class="form-control" value="75.5" step="0.1">
+          </div>
+          <button class="btn-primary" onclick="executeReview()">🔍 執行預測比對與 AI 偏差診斷</button>
+        </div>
+
+        <div class="glass-card">
+          <h3 class="card-title">📋 偏差歸因與模型校準報告</h3>
+          <div id="review-output" class="output-box">輸入真實開獎數據後，點擊左側開始診斷預測偏差原因與優化經驗。</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 5: Reports & NotebookLM Library -->
+    <div id="tab-reports" class="tab-panel">
+      <div class="glass-card">
+        <h3 class="card-title">📁 本地分析報告與 NotebookLM 同步檔案庫</h3>
+        <button class="btn-primary" style="width: auto; margin-bottom: 16px;" onclick="loadReports()">🔄 重新整理檔案清單</button>
+        <div id="reports-list">載入中...</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/static/js/app.js?v=4.0.3"></script>
+</body>
+</html>
