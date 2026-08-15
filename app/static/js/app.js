@@ -1,4 +1,4 @@
-// Frontend Application Logic for ChronoAFR (v4.1.0 Negative Growth, Business Cycle Presets & Loss-Period P/E Engine)
+// Frontend Application Logic for ChronoAFR (v5.0.0 End-to-End Three-Factor Synthesis Pipeline & Pro-Forma Engine)
 
 document.addEventListener('DOMContentLoaded', () => {
   loadAvailableDocuments();
@@ -42,6 +42,7 @@ let currentCategoryFilter = 'ALL';
 let latestAiQuery = "";
 let latestAiAnswer = "";
 let latestSelectedFiles = [];
+let latestForecastPayload = null; // Holds the AI synthesized structured forecast payload
 
 // Safe Number Formatter
 function fmtNum(val, digits = 1) {
@@ -78,7 +79,7 @@ async function loadAvailableDocuments() {
 
       html += `
         <label class="doc-item" data-type="${doc.file_type}" style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; padding: 5px 0; cursor: pointer; border-bottom: 1px dashed rgba(0,0,0,0.05);">
-          <input type="checkbox" class="doc-chk" value="${doc.filename}" onchange="updateSelectedCountBadge()" ${doc.filename.includes('AMZN') ? 'checked' : ''}>
+          <input type="checkbox" class="doc-chk" value="${doc.filename}" onchange="updateSelectedCountBadge()" ${doc.filename.includes('AMZN') || doc.filename.includes('Amazon') ? 'checked' : ''}>
           <span style="font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.05); color: ${badgeColor};">${doc.file_type}</span>
           <span style="word-break: break-all;">${doc.display_label}</span>
           <span style="font-size: 0.75rem; color: #82776E; margin-left: auto;">(${doc.size_kb} KB)</span>
@@ -158,7 +159,251 @@ function selectGDriveDocsOnly() {
   updateSelectedCountBadge();
 }
 
+// -----------------------------------------------------------------------------
+// Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.0.0)
+// -----------------------------------------------------------------------------
+
+async function runAiThreeFactorResearch() {
+  const selectedDocs = Array.from(document.querySelectorAll('.doc-chk:checked')).map(cb => cb.value);
+  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
+
+  const outBox = document.getElementById('rag-output');
+  const toolbar = document.getElementById('ai-answer-toolbar');
+  const applyBtn = document.getElementById('btn-apply-forecast-to-tab3');
+
+  if (toolbar) toolbar.style.display = 'none';
+  if (applyBtn) applyBtn.style.display = 'none';
+
+  if (!selectedDocs || selectedDocs.length === 0) {
+    if (outBox) {
+      outBox.innerHTML = `
+        <div style="background: #FFF0F3; border: 1.5px solid #EF4444; border-radius: 8px; padding: 16px; color: #EF4444;">
+          <h4 style="margin: 0 0 8px 0; font-size: 1.05rem;">⚠️ 資料不足警示 (Insufficient Data)</h4>
+          <p style="margin: 0; font-size: 0.9rem; color: #4A4036;">
+            您尚未在上方勾選任何參考文件！請至少勾選 1 份目標公司之 <strong>10-K/10-Q 財報、年報 PDF 或月營收研報</strong>，AI 才能進行前瞻三大因子深度研讀與成長率推算。
+          </p>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  if (outBox) {
+    outBox.innerHTML = `
+      <div style="font-size: 0.95rem; color: #82776E; padding: 16px;">
+        🤖 <strong>Gemini AI 正在深入研讀被選取的 ${selectedDocs.length} 份文件...</strong><br><br>
+        • 正在進行【資料充分性檢核】...<br>
+        • 正在計算【(1) 未來營收與業務細項年增率】...<br>
+        • 正在推估【(2) 未來營業成本結構與毛利率變化】...<br>
+        • 正在分析【(3) 未來營業費用 (研發/行銷/管理) 支出率】...
+      </div>
+    `;
+  }
+
+  try {
+    const res = await fetch('/api/ai_synthesize_forecast', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        ticker,
+        selected_files: selectedDocs
+      })
+    });
+    const data = await res.json();
+
+    if (data.status === 'insufficient_data') {
+      if (outBox) {
+        outBox.innerHTML = `
+          <div style="background: #FFF0F3; border: 1.5px solid #EF4444; border-radius: 8px; padding: 16px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 1.05rem; color: #EF4444;">⚠️ 資料不足警示 (Insufficient Data)</h4>
+            <p style="margin: 0 0 10px 0; font-size: 0.9rem; color: #4A4036;">
+              ${data.message || data.insufficiency_reason || '目前勾選的資料缺乏足夠之財務細拆數據，無法做出可靠的前瞻預測推論。'}
+            </p>
+            <div style="font-size: 0.85rem; color: #82776E;">
+              建議勾選包含營收細拆、營業費用與損益表明細的完整 10-K 年報或官方季報後再次執行。
+            </div>
+          </div>
+        `;
+      }
+      return;
+    }
+
+    // Data is sufficient!
+    latestForecastPayload = data.structured_forecast;
+    latestAiQuery = "【前瞻三大因子深度研讀】1.未來營收 2.營業成本 3.營業費用";
+    latestAiAnswer = data.research_brief || "";
+    latestSelectedFiles = selectedDocs;
+
+    let html = `
+      <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; line-height: 1.6; font-size: 0.92rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1.5px solid var(--card-border); padding-bottom: 10px;">
+          <span style="font-size: 1rem; font-weight: 700; color: #D96B82;">📊 ${data.ticker || ticker} 前瞻三大因子深度研讀報告</span>
+          <span style="font-size: 0.8rem; background: #E8F5E9; color: #2E7D32; font-weight: 700; padding: 3px 8px; border-radius: 4px;">✅ 資料充足 (Data Sufficient)</span>
+        </div>
+        <div style="white-space: pre-wrap; font-family: inherit; color: var(--text-main); margin-bottom: 18px;">
+${latestAiAnswer}
+        </div>
+        <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+          <div>
+            <div style="font-weight: 700; color: #D96B82; font-size: 0.95rem;">💡 審閱確認：若您認可 AI 的前瞻推論與年增率</div>
+            <div style="font-size: 0.83rem; color: #82776E;">點擊右側按鈕將自動注入「前瞻財務預測」工作台並生成 3 年 Pro-Forma 損益表與 EPS！</div>
+          </div>
+          <button type="button" class="btn-primary" style="width: auto; padding: 10px 20px; font-weight: 700; font-size: 0.92rem; background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%);" onclick="applyAiForecastToTab3()">
+            🚀 採納此推論並一鍵套用至前瞻預測 (Auto-Fill & Run Pro-Forma)
+          </button>
+        </div>
+      </div>
+    `;
+
+    if (outBox) outBox.innerHTML = html;
+    if (toolbar) toolbar.style.display = 'flex';
+    if (applyBtn) applyBtn.style.display = 'inline-block';
+  } catch (err) {
+    if (outBox) outBox.innerHTML = `<div style="color: #EF4444; padding: 12px;">❌ 研讀分析失敗: ${err.message}</div>`;
+  }
+}
+
+function applyAiForecastToTab3() {
+  if (!latestForecastPayload) {
+    alert("尚未有可套用的 AI 前瞻預測數據，請先點擊「執行前瞻三大因子深度研讀」！");
+    return;
+  }
+
+  const data = latestForecastPayload;
+
+  // 1. Fill Header Controls
+  if (data.ticker && document.getElementById('fc-ticker')) {
+    document.getElementById('fc-ticker').value = data.ticker;
+  }
+  if (data.base_revenue && document.getElementById('fc-base-rev')) {
+    document.getElementById('fc-base-rev').value = data.base_revenue;
+  }
+  if (data.current_price && document.getElementById('fc-current-price')) {
+    document.getElementById('fc-current-price').value = data.current_price;
+  }
+  if (data.shares_outstanding && document.getElementById('fc-shares-outstanding')) {
+    document.getElementById('fc-shares-outstanding').value = data.shares_outstanding;
+  }
+  if (data.historical_pe_avg && document.getElementById('fc-pe-avg')) {
+    document.getElementById('fc-pe-avg').value = data.historical_pe_avg;
+  }
+
+  // 2. Inject Breakdowns
+  if (data.revenue_segments && data.revenue_segments.length > 0) {
+    revenueSegments = data.revenue_segments;
+  }
+  if (data.cogs_segments && data.cogs_segments.length > 0) {
+    cogsSegments = data.cogs_segments;
+  }
+  if (data.opex_segments && data.opex_segments.length > 0) {
+    opexSegments = data.opex_segments;
+  }
+
+  // 3. Switch to Tab 3
+  switchTab('tab-forecast');
+
+  // 4. Render and Recalculate
+  renderRevenueSegmentRows();
+  renderCogsSegmentRows();
+  renderOpexSegmentRows();
+  recalculateTotals();
+
+  // 5. Automatically Run Pro-Forma & Valuation
+  executeForecast();
+
+  // 6. Show Notification Feedback
+  const steerFeedback = document.getElementById('ai-steer-feedback');
+  if (steerFeedback) {
+    steerFeedback.style.display = 'block';
+    steerFeedback.innerText = "✨ 成功從「AI 財報研讀中樞」代入三大因子推論，並自動生成 3 年 Pro-Forma 損益表與 EPS！";
+  }
+}
+
+async function executeAsk() {
+  const query = document.getElementById('rag-query')?.value.trim();
+  const selectedDocs = Array.from(document.querySelectorAll('.doc-chk:checked')).map(cb => cb.value);
+
+  if (!query) {
+    alert("請輸入您的投資分析問題！");
+    return;
+  }
+
+  const outBox = document.getElementById('rag-output');
+  const toolbar = document.getElementById('ai-answer-toolbar');
+  const applyBtn = document.getElementById('btn-apply-forecast-to-tab3');
+
+  if (toolbar) toolbar.style.display = 'none';
+  if (applyBtn) applyBtn.style.display = 'none';
+  if (outBox) outBox.innerText = `💡 正在檢索已選取的 ${selectedDocs.length} 份文件並由 Gemini AI 進行分析...`;
+
+  try {
+    const res = await fetch('/api/ask', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        selected_files: selectedDocs
+      })
+    });
+    const data = await res.json();
+    latestAiQuery = query;
+    latestAiAnswer = data.answer || "無回答內容";
+    latestSelectedFiles = selectedDocs;
+
+    if (outBox) outBox.innerText = latestAiAnswer;
+    if (toolbar) toolbar.style.display = 'flex';
+  } catch (err) {
+    if (outBox) outBox.innerText = "❌ 查詢失敗: " + err;
+  }
+}
+
+function downloadAnswerMarkdown() {
+  if (!latestAiAnswer) return;
+  const filename = `ChronoAFR_AI_Analysis_${new Date().toISOString().slice(0, 10)}.md`;
+  const content = `# [ChronoAFR AI 分析報告] ${latestAiQuery}\n\n- **產出時間**: ${new Date().toLocaleString()}\n- **參考文件**: ${latestSelectedFiles.join(', ') || '全庫檢索'}\n\n## 分析回答內容\n\n${latestAiAnswer}\n`;
+  
+  const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+function copyAnswerMarkdown() {
+  if (!latestAiAnswer) return;
+  navigator.clipboard.writeText(latestAiAnswer).then(() => {
+    alert("📋 分析回答內文已成功複製到剪貼簿！");
+  }).catch(err => {
+    alert("複製失敗: " + err);
+  });
+}
+
+async function syncAnswerToNotebookLM() {
+  if (!latestAiAnswer) return;
+  try {
+    const res = await fetch('/api/sync_answer', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query: latestAiQuery,
+        answer: latestAiAnswer,
+        selected_files: latestSelectedFiles
+      })
+    });
+    const data = await res.json();
+    alert(`☁️ 成功同步至 NotebookLM 雲端資料夾：\n${data.filename}`);
+  } catch (err) {
+    alert("❌ 同步失敗: " + err);
+  }
+}
+
+// -----------------------------------------------------------------------------
 // Pro-Forma Workbench Functions
+// -----------------------------------------------------------------------------
+
 async function loadTickerFinancialHistory() {
   const tickerInput = document.getElementById('fc-ticker');
   if (!tickerInput) return;
@@ -216,11 +461,11 @@ function applyCyclePreset(presetType, btn) {
   } else if (presetType === 'DESTOCKING') {
     // Downside Destocking / Recession Cycle (Negative Growth)
     revenueSegments.forEach((seg, idx) => {
-      if (idx === 0) seg.growth_y1 = 0.08; // High tech slows down
+      if (idx === 0) seg.growth_y1 = 0.08;
       else if (idx === 1) seg.growth_y1 = -0.15; // Consumer/Retail drops -15%
       else seg.growth_y1 = -0.08; // Intl retail drops -8%
     });
-    cogsSegments.forEach(cg => cg.growth_y1 = 0.04); // Fixed costs stay relatively rigid
+    cogsSegments.forEach(cg => cg.growth_y1 = 0.04);
     if (feedbackEl) {
       feedbackEl.style.display = 'block';
       feedbackEl.innerText = "📉 已切換為【產業去庫存 / 下行週期】：零售與硬體業務進入負成長 (-8% ~ -15%)，模擬毛利率受壓。";
@@ -266,7 +511,7 @@ async function scanCycleDownsideRisks() {
     if (data.downside_segments && data.downside_segments.length > 0) {
       output += `• 建議設定負成長業務：${data.downside_segments.map(d => `${d.name} (${(d.recommended_growth_y1*100).toFixed(1)}% YoY)`).join(', ')}\n`;
     }
-    output += `• 獲利拐點展望：${data.turnaround_outlook || '預計 Y2 築底，Y3 迎來新循環復甦'}`;
+    output += `• 獲利拐點展望：${data.turnaround_outlook || '預計 Y2 築底，Y3 進入新一輪 AI/產品升級成長循環'}`;
 
     if (feedbackEl) {
       feedbackEl.innerText = output;

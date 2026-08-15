@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChronoAFR | 投資分析、前瞻預測與復盤系統</title>
-  <link rel="stylesheet" href="/static/css/style.css?v=4.1.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=5.0.0">
 </head>
 <body>
 
@@ -89,17 +89,33 @@
               載入檔案清單中...
             </div>
           </div>
-          <div class="form-group">
-            <label>請輸入您的投資分析問題</label>
-            <textarea id="rag-query" class="form-control" rows="4">請詳細總結 Amazon (AMZN) 最新 Q2 財報的淨營收、AWS 成長率、營業利潤與 AI 投資重點。</textarea>
+
+          <!-- Fixed 3-Factor Forecast Research Card -->
+          <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); padding: 14px; border-radius: var(--radius-md); margin-bottom: 18px;">
+            <div style="font-weight: 700; font-size: 0.95rem; color: #D96B82; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+              <span>⚡ 法人級三大前瞻因子自動研讀 (1.營收 2.成本 3.費用)</span>
+              <span style="font-size: 0.8rem; font-weight: 600; color: #82776E;">(嚴格根據上方勾選之文件研讀)</span>
+            </div>
+            <div style="font-size: 0.85rem; color: #4A4036; margin: 8px 0 12px 0;">
+              點擊後 AI 將直接研讀選取之年報/財報/總經文件，回答三大核心問題：<strong>(1) 預測未來營收及業務細項年增率 (2) 預測未來營業成本與毛利率影響 (3) 預測未來營業費用率</strong>。
+            </div>
+            <button type="button" class="btn-primary" style="background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%); font-weight: 700; font-size: 0.95rem;" onclick="runAiThreeFactorResearch()">
+              ⚡ 執行前瞻三大因子深度研讀 (含資料充分性檢核)
+            </button>
           </div>
-          <button class="btn-primary" onclick="executeAsk()">💡 傳送問題給 Gemini AI</button>
+
+          <div class="form-group">
+            <label>或自由輸入自訂投資分析問題：</label>
+            <textarea id="rag-query" class="form-control" rows="3">請詳細總結 Amazon (AMZN) 最新 Q2 財報的淨營收、AWS 成長率、營業利潤與 AI 投資重點。</textarea>
+          </div>
+          <button class="btn-primary" onclick="executeAsk()">💡 傳送自訂問題給 Gemini AI</button>
         </div>
 
         <div class="glass-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <h3 class="card-title" style="margin-bottom: 0;">💬 AI 分析回答</h3>
-            <div id="ai-answer-toolbar" style="display: none; gap: 6px; align-items: center;">
+            <h3 class="card-title" style="margin-bottom: 0;">💬 AI 分析研讀報告</h3>
+            <div id="ai-answer-toolbar" style="display: none; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <button type="button" id="btn-apply-forecast-to-tab3" class="btn-sm" style="background: #FFF0F3; border: 1.5px solid #D96B82; color: #D96B82; font-weight: 700; display: none;" onclick="applyAiForecastToTab3()">🚀 一鍵帶入第 3 步生成 Pro-Forma 損益表</button>
               <button type="button" class="btn-sm" onclick="downloadAnswerMarkdown()">📥 下載 .md 報告</button>
               <button type="button" class="btn-sm" onclick="copyAnswerMarkdown()">📋 複製內文</button>
               <button type="button" class="btn-sm" onclick="syncAnswerToNotebookLM()">☁️ 同步至 NotebookLM</button>
@@ -337,6 +353,6 @@
 
   </div>
 
-  <script src="/static/js/app.js?v=4.1.0"></script>
+  <script src="/static/js/app.js?v=5.0.0"></script>
 </body>
 </html>
