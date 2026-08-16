@@ -130,27 +130,28 @@ async function executeFetch() {
     if (data.status === 'success') {
       const companyName = getCompanyDisplayName(ticker);
       let html = `<div style="line-height: 1.8; font-size: 0.92rem;">`;
-      html += `<div style="font-weight: 700; color: #2E7D32; margin-bottom: 8px;">✅ 數據擷取與解析完成！</div>`;
+      html += `<div style="font-weight: 700; color: #2E7D32; margin-bottom: 8px;"><i class="ph-duotone ph-check-circle" style="color: #2E7D32;"></i> 數據擷取與解析完成！</div>`;
       (data.results || []).forEach(r => {
         html += `<div>• ${r}</div>`;
       });
-      html += `<div style="margin-top: 10px; font-size: 0.82rem; color: #82776E;">📂 檔案已同步至 NotebookLM 雲端資料夾：<code>${data.gdrive_path}</code></div>`;
+      html += `<div style="margin-top: 10px; font-size: 0.82rem; color: #82776E;"><i class="ph-duotone ph-folder" style="color: #82776E;"></i> 檔案已同步至 NotebookLM 雲端資料夾：<code>${data.gdrive_path}</code></div>`;
 
       // Confirmation Banner to Lock Target and Proceed to Tab 2
       html += `
         <div style="margin-top: 16px; background: #FFF5F7; border: 1.5px solid var(--primary-pink); border-radius: 8px; padding: 16px;">
-          <div style="font-weight: 700; color: #D96B82; font-size: 1rem; margin-bottom: 6px;">
-            🎉 目標確認：是否以【${ticker} - ${companyName}】作為本次分析研究目標？
+          <div style="font-weight: 700; color: #D96B82; font-size: 1rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <i class="ph-duotone ph-check-square-offset" style="font-size: 1.2rem;"></i>
+            <span>目標確認：是否以【${ticker} - ${companyName}】作為本次分析研究目標？</span>
           </div>
           <div style="font-size: 0.86rem; color: #4A4036; margin-bottom: 12px;">
             確認後系統將全域鎖定研究主體為 <strong>${ticker}</strong>，並自動為您切換至 <strong>Step 2. AI 財報問答</strong> 同步精準勾選該公司文件。
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button type="button" class="btn-primary" style="width: auto; padding: 8px 18px; font-size: 0.92rem; font-weight: 700; background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%);" onclick="confirmTargetAndProceedToTab2('${ticker}')">
-              ✅ 確認以此公司進行分析，進入第 2 步 (AI 財報問答)
+              <i class="ph-duotone ph-check"></i> 確認以此公司進行分析，進入第 2 步 (AI 財報問答)
             </button>
             <button type="button" class="btn-sm" style="background: #FFF; border: 1px solid var(--card-border);" onclick="document.getElementById('fetch-ticker').focus()">
-              🔄 重新修改代號
+              <i class="ph-duotone ph-arrows-clockwise"></i> 重新修改代號
             </button>
           </div>
         </div>
@@ -319,7 +320,7 @@ function showMismatchAlert(mismatchInfo, onConfirmAction) {
   container.innerHTML = `
     <div style="background: #FFF8E7; border: 1.5px solid #F59E0B; border-radius: 8px; padding: 16px; color: #78350F; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);">
       <div style="display: flex; align-items: flex-start; gap: 10px;">
-        <span style="font-size: 1.4rem;">⚠️</span>
+        <i class="ph-duotone ph-warning" style="font-size: 1.4rem; color: #D97706; margin-top: 2px;"></i>
         <div style="flex: 1;">
           <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; color: #92400E;">
             【研讀文件與目標公司不一致警示】
@@ -329,10 +330,10 @@ function showMismatchAlert(mismatchInfo, onConfirmAction) {
           </p>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             <button type="button" class="btn-sm" style="background: #F59E0B; color: #FFF; font-weight: 700; border: none; padding: 8px 14px;" onclick="autoFixAndRunResearch()">
-              🔄 一鍵修正：自動改勾選 ${activeTargetTicker} 相關檔案並繼續
+              <i class="ph-duotone ph-arrows-clockwise"></i> 一鍵修正：自動改勾選 ${activeTargetTicker} 相關檔案並繼續
             </button>
             <button type="button" class="btn-sm" style="background: #FFF; border: 1px solid #D97706; color: #92400E; font-weight: 600;" onclick="switchTab('tab-fetch')">
-              ⬅️ 回到 Step 1：重新設定目標公司代號
+              <i class="ph-duotone ph-arrow-counter-clockwise"></i> 回到 Step 1：重新設定目標公司代號
             </button>
           </div>
         </div>
@@ -854,8 +855,8 @@ function renderRevenueSegmentRows() {
           $0.00
         </td>
         <td style="padding: 6px; text-align: center; white-space: nowrap;">
-          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; font-size: 1.1rem; margin-right: 4px;" onclick="addRevenueSegmentRow(${idx})">➕</button>
-          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; font-size: 1.1rem;" onclick="removeRevenueSegmentRow(${idx})">🗑️</button>
+          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="addRevenueSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.15rem;"></i></button>
+          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="removeRevenueSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.15rem;"></i></button>
         </td>
       </tr>
     `;
@@ -888,8 +889,8 @@ function renderCogsSegmentRows() {
           $0.00
         </td>
         <td style="padding: 6px; text-align: center; white-space: nowrap;">
-          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; font-size: 1.1rem; margin-right: 4px;" onclick="addCogsSegmentRow(${idx})">➕</button>
-          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; font-size: 1.1rem;" onclick="removeCogsSegmentRow(${idx})">🗑️</button>
+          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="addCogsSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.15rem;"></i></button>
+          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="removeCogsSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.15rem;"></i></button>
         </td>
       </tr>
     `;
@@ -919,8 +920,8 @@ function renderOpexSegmentRows() {
           $0.00
         </td>
         <td style="padding: 6px; text-align: center; white-space: nowrap;">
-          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; font-size: 1.1rem; margin-right: 4px;" onclick="addOpexSegmentRow(${idx})">➕</button>
-          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; font-size: 1.1rem;" onclick="removeOpexSegmentRow(${idx})">🗑️</button>
+          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="addOpexSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.15rem;"></i></button>
+          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="removeOpexSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.15rem;"></i></button>
         </td>
       </tr>
     `;

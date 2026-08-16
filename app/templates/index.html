@@ -5,7 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ChronoAFR | 投資分析、前瞻預測與復盤系統</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⏳</text></svg>">
-  <link rel="stylesheet" href="/static/css/style.css?v=5.1.0">
+  
+  <!-- Phosphor Icons (Duotone) for Refined Muted Luxury Aesthetic -->
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css">
+  <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
+  
+  <link rel="stylesheet" href="/static/css/style.css?v=5.2.0">
 </head>
 <body>
 
@@ -13,7 +18,9 @@
     <!-- Header -->
     <header class="dashboard-header">
       <div class="brand">
-        <div class="brand-icon">⏳</div>
+        <div class="brand-icon">
+          <i class="ph-duotone ph-hourglass-simple"></i>
+        </div>
         <div>
           <h1 class="brand-title">ChronoAFR 投資系統</h1>
           <p class="brand-subtitle">Chrono Analysis, Forecast & Review Engine</p>
@@ -21,27 +28,42 @@
       </div>
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
         <div id="header-target-badge" style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; background: #FFF; border: 1.5px solid var(--primary-pink); padding: 5px 14px; border-radius: 20px; color: #D96B82; font-weight: 700; box-shadow: 0 2px 6px rgba(0,0,0,0.03);">
-          <span>🎯 當前鎖定研究目標：</span>
+          <i class="ph-duotone ph-crosshair-simple" style="font-size: 1.1rem;"></i>
+          <span>當前研究目標：</span>
           <strong id="global-active-ticker-display" style="font-size: 0.95rem;">GOOG (Google)</strong>
         </div>
-        <div class="status-badge">🟢 系統線上連線中</div>
+        <div class="status-badge">
+          <i class="ph-duotone ph-check-circle" style="color: #2E7D32; font-size: 1rem; margin-right: 2px;"></i> 系統線上連線中
+        </div>
       </div>
     </header>
 
     <!-- Navigation Tabs -->
     <nav class="nav-tabs">
-      <button class="tab-btn active" onclick="switchTab('tab-fetch')">📥 1. 數據擷取 & NotebookLM</button>
-      <button class="tab-btn" onclick="switchTab('tab-rag')">🧠 2. AI 財報問答 (RAG)</button>
-      <button class="tab-btn" onclick="switchTab('tab-forecast')">🔮 3. 前瞻財務預測 (Forecasting)</button>
-      <button class="tab-btn" onclick="switchTab('tab-review')">⚖️ 4. 預測復盤診斷 (Reviewing)</button>
-      <button class="tab-btn" onclick="switchTab('tab-reports')">📁 5. 報告與同步資料庫</button>
+      <button class="tab-btn active" onclick="switchTab('tab-fetch')">
+        <i class="ph-duotone ph-cloud-arrow-down"></i> 1. 數據擷取 & NotebookLM
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-rag')">
+        <i class="ph-duotone ph-chat-teardrop-text"></i> 2. AI 財報問答 (RAG)
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-forecast')">
+        <i class="ph-duotone ph-chart-line-up"></i> 3. 前瞻財務預測 (Forecasting)
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-review')">
+        <i class="ph-duotone ph-scales"></i> 4. 預測復盤診斷 (Reviewing)
+      </button>
+      <button class="tab-btn" onclick="switchTab('tab-reports')">
+        <i class="ph-duotone ph-folder-notch-open"></i> 5. 報告與同步資料庫
+      </button>
     </nav>
 
     <!-- Tab 1: Data Fetching -->
     <div id="tab-fetch" class="tab-panel active">
       <div class="card-grid">
         <div class="glass-card">
-          <h3 class="card-title">📥 官方數據抓取面板</h3>
+          <h3 class="card-title">
+            <i class="ph-duotone ph-cloud-arrow-down" style="color: #D96B82;"></i> 官方數據抓取面板
+          </h3>
           <div class="form-group">
             <label>股票代號 (美股如 GOOG / NVDA / AMZN 或 台股 2330)</label>
             <input type="text" id="fetch-ticker" class="form-control" value="GOOG">
@@ -56,11 +78,15 @@
               <option value="gdrive">僅 Google Drive (個人上傳個研/財報 PDF)</option>
             </select>
           </div>
-          <button class="btn-primary" onclick="executeFetch()">🚀 開始抓取並解析 Markdown</button>
+          <button class="btn-primary" onclick="executeFetch()">
+            <i class="ph-duotone ph-arrow-circle-down"></i> 開始抓取並解析 Markdown
+          </button>
         </div>
 
         <div class="glass-card">
-          <h3 class="card-title">📊 抓取執行結果</h3>
+          <h3 class="card-title">
+            <i class="ph-duotone ph-chart-bar" style="color: #D96B82;"></i> 抓取執行結果
+          </h3>
           <div id="fetch-output" class="output-box">尚未執行抓取。點擊左側按鈕開始擷取美股/台股與總經數據。</div>
         </div>
       </div>
@@ -71,14 +97,16 @@
       <!-- Target Company Alignment Banner in Tab 2 -->
       <div style="background: #FFF; border: 1.5px solid var(--card-border); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.2rem;">🎯</span>
+          <i class="ph-duotone ph-target" style="font-size: 1.4rem; color: #D96B82;"></i>
           <div>
             <div style="font-size: 0.82rem; color: #82776E;">本次研究分析目標公司 (Active Research Target)</div>
             <div style="font-size: 1.05rem; font-weight: 700; color: #D96B82;" id="tab2-target-name-banner">GOOG (Alphabet / Google)</div>
           </div>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button type="button" class="btn-sm" style="background: #FAF8F5; border: 1px solid var(--card-border); color: #4A4036;" onclick="switchTab('tab-fetch')">🔄 切換/變更目標公司 (回到 Step 1)</button>
+          <button type="button" class="btn-sm" style="background: #FAF8F5; border: 1px solid var(--card-border); color: #4A4036;" onclick="switchTab('tab-fetch')">
+            <i class="ph-duotone ph-arrows-clockwise"></i> 切換/變更目標公司 (回到 Step 1)
+          </button>
         </div>
       </div>
 
@@ -87,27 +115,39 @@
 
       <div class="card-grid">
         <div class="glass-card">
-          <h3 class="card-title">🧠 Gemini AI 財報與總經對話引擎</h3>
+          <h3 class="card-title">
+            <i class="ph-duotone ph-chat-teardrop-text" style="color: #D96B82;"></i> Gemini AI 財報與總經對話引擎
+          </h3>
           <div class="form-group">
             <label style="display: flex; justify-content: space-between; align-items: center;">
-              <span>📂 指定研讀參考文件 (請勾選與目標公司相符之文件)</span>
+              <span>指定研讀參考文件 (請勾選與目標公司相符之文件)</span>
               <span id="selected-count-badge" class="slider-value" style="font-size: 0.8rem;">已選擇 0 個檔案</span>
             </label>
             <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
-              <button type="button" class="btn-sm" onclick="autoSelectTargetDocs(activeTargetTicker)">🎯 自動勾選此公司檔案</button>
+              <button type="button" class="btn-sm" onclick="autoSelectTargetDocs(activeTargetTicker)">
+                <i class="ph-duotone ph-check-square-offset"></i> 自動勾選此公司檔案
+              </button>
               <button type="button" class="btn-sm" onclick="selectAllDocs(true)">全選</button>
               <button type="button" class="btn-sm" onclick="selectAllDocs(false)">清空</button>
               <button type="button" class="btn-sm" onclick="selectGDriveDocsOnly()">僅 Google Drive 文件</button>
-              <button type="button" class="btn-sm" onclick="loadAvailableDocuments()">🔄 重新整理</button>
+              <button type="button" class="btn-sm" onclick="loadAvailableDocuments()">
+                <i class="ph-duotone ph-arrows-clockwise"></i> 重新整理
+              </button>
             </div>
             <!-- Search & Type Filters Bar -->
             <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-              <input type="text" id="doc-search-input" class="form-control" style="flex: 1; min-width: 220px; padding: 6px 12px; font-size: 0.85rem;" placeholder="🔍 輸入關鍵字即時搜尋檔名 (如 GOOG, NVDA, PDF)..." oninput="filterDocList()">
+              <input type="text" id="doc-search-input" class="form-control" style="flex: 1; min-width: 220px; padding: 6px 12px; font-size: 0.85rem;" placeholder="搜尋檔名 (如 GOOG, NVDA, PDF)..." oninput="filterDocList()">
               <div style="display: flex; gap: 4px; align-items: center;">
                 <button type="button" class="btn-sm badge-btn active" onclick="setDocCategoryFilter('ALL', this)">全部</button>
-                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('PDF', this)">📄 PDF</button>
-                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('EXCEL', this)">📊 Excel/CSV</button>
-                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('DOCX', this)">📝 Word/MD</button>
+                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('PDF', this)">
+                  <i class="ph-duotone ph-file-pdf"></i> PDF
+                </button>
+                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('EXCEL', this)">
+                  <i class="ph-duotone ph-file-xls"></i> Excel/CSV
+                </button>
+                <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('DOCX', this)">
+                  <i class="ph-duotone ph-file-doc"></i> Word/MD
+                </button>
               </div>
             </div>
             <div id="doc-selector-container" style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 12px; max-height: 180px; overflow-y: auto;">
@@ -118,14 +158,14 @@
           <!-- Fixed 3-Factor Forecast Research Card -->
           <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); padding: 14px; border-radius: var(--radius-md); margin-bottom: 18px;">
             <div style="font-weight: 700; font-size: 0.95rem; color: #D96B82; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-              <span>⚡ 法人級三大前瞻因子自動研讀 (1.營收 2.成本 3.費用)</span>
+              <span><i class="ph-duotone ph-sparkle"></i> 法人級三大前瞻因子自動研讀 (1.營收 2.成本 3.費用)</span>
               <span style="font-size: 0.8rem; font-weight: 600; color: #82776E;">(含目標公司一致性防呆檢核)</span>
             </div>
             <div style="font-size: 0.85rem; color: #4A4036; margin: 8px 0 12px 0;">
               點擊後 AI 將先檢核選取之文件是否與目標公司吻合，並嚴格根據文件回答三大核心問題：<strong>(1) 預測未來營收及業務細項年增率 (2) 預測未來營業成本與毛利率影響 (3) 預測未來營業費用率</strong>。
             </div>
             <button type="button" class="btn-primary" style="background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%); font-weight: 700; font-size: 0.95rem;" onclick="runAiThreeFactorResearch()">
-              ⚡ 執行前瞻三大因子深度研讀 (含一致性檢核)
+              <i class="ph-duotone ph-sparkle"></i> 執行前瞻三大因子深度研讀 (含一致性檢核)
             </button>
           </div>
 
@@ -133,21 +173,33 @@
             <label>或自由輸入自訂投資分析問題：</label>
             <textarea id="rag-query" class="form-control" rows="3">請詳細總結該公司最新財報的營收細拆、雲端/AI 成長率、營業利益與未來展望重點。</textarea>
           </div>
-          <button class="btn-primary" onclick="executeAsk()">💡 傳送自訂問題給 Gemini AI</button>
+          <button class="btn-primary" onclick="executeAsk()">
+            <i class="ph-duotone ph-paper-plane-tilt"></i> 傳送自訂問題給 Gemini AI
+          </button>
         </div>
 
         <div class="glass-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <h3 class="card-title" style="margin-bottom: 0;">💬 AI 分析研讀報告</h3>
+            <h3 class="card-title" style="margin-bottom: 0;">
+              <i class="ph-duotone ph-article" style="color: #D96B82;"></i> AI 分析研讀報告
+            </h3>
             <div id="ai-answer-toolbar" style="display: none; gap: 6px; align-items: center; flex-wrap: wrap;">
-              <button type="button" id="btn-apply-forecast-to-tab3" class="btn-sm" style="background: #FFF0F3; border: 1.5px solid #D96B82; color: #D96B82; font-weight: 700; display: none;" onclick="applyAiForecastToTab3()">🚀 一鍵帶入第 3 步生成 Pro-Forma 損益表</button>
-              <button type="button" class="btn-sm" onclick="downloadAnswerMarkdown()">📥 下載 .md 報告</button>
-              <button type="button" class="btn-sm" onclick="copyAnswerMarkdown()">📋 複製內文</button>
-              <button type="button" class="btn-sm" onclick="syncAnswerToNotebookLM()">☁️ 同步至 NotebookLM</button>
+              <button type="button" id="btn-apply-forecast-to-tab3" class="btn-sm" style="background: #FFF0F3; border: 1.5px solid #D96B82; color: #D96B82; font-weight: 700; display: none;" onclick="applyAiForecastToTab3()">
+                <i class="ph-duotone ph-lightning"></i> 一鍵帶入第 3 步生成 Pro-Forma 損益表
+              </button>
+              <button type="button" class="btn-sm" onclick="downloadAnswerMarkdown()">
+                <i class="ph-duotone ph-download-simple"></i> 下載 .md 報告
+              </button>
+              <button type="button" class="btn-sm" onclick="copyAnswerMarkdown()">
+                <i class="ph-duotone ph-copy-simple"></i> 複製內文
+              </button>
+              <button type="button" class="btn-sm" onclick="syncAnswerToNotebookLM()">
+                <i class="ph-duotone ph-cloud-arrow-up"></i> 同步至 NotebookLM
+              </button>
             </div>
           </div>
           <div id="rag-output" class="output-box" style="white-space: normal; line-height: 1.6; min-height: 480px;">
-            尚未執行研讀。請在左側勾選目標公司的財報/年報文件後，點擊「⚡ 執行前瞻三大因子深度研讀」。
+            尚未執行研讀。請在左側勾選目標公司的財報/年報文件後，點擊「執行前瞻三大因子深度研讀」。
           </div>
         </div>
       </div>
@@ -158,34 +210,49 @@
       <!-- Active Target Banner in Tab 3 -->
       <div style="background: #FFF; border: 1.5px solid var(--card-border); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <div style="display: flex; align-items: center; gap: 10px;">
-          <span style="font-size: 1.2rem;">🔮</span>
+          <i class="ph-duotone ph-chart-line-up" style="font-size: 1.4rem; color: #D96B82;"></i>
           <div>
             <div style="font-size: 0.82rem; color: #82776E;">當前預測工作台目標公司 (Forecasting Target)</div>
             <div style="font-size: 1.05rem; font-weight: 700; color: #D96B82;" id="tab3-target-name-banner">GOOG (Alphabet / Google)</div>
           </div>
         </div>
         <div style="display: flex; gap: 8px;">
-          <button type="button" class="btn-sm" style="background: #FFF0F3; border: 1px solid var(--primary-pink); color: #D96B82; font-weight: 700;" onclick="switchTab('tab-rag')">💬 查看 AI 財報研讀推論 (回到 Step 2)</button>
+          <button type="button" class="btn-sm" style="background: #FFF0F3; border: 1px solid var(--primary-pink); color: #D96B82; font-weight: 700;" onclick="switchTab('tab-rag')">
+            <i class="ph-duotone ph-chat-teardrop-text"></i> 查看 AI 財報研讀推論 (回到 Step 2)
+          </button>
         </div>
       </div>
 
       <div class="card-grid">
         <div class="glass-card">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <h3 class="card-title" style="margin-bottom: 0;">🔮 Pro-Forma 三大因子推估工作台</h3>
-            <button type="button" class="btn-sm" style="background: #FFF0F3; border: 1px solid #D96B82; color: #D96B82; font-weight: 700;" onclick="getAiForecastRecommendation()">🤖 AI 重新研讀推薦參數</button>
+            <h3 class="card-title" style="margin-bottom: 0;">
+              <i class="ph-duotone ph-chart-polar" style="color: #D96B82;"></i> Pro-Forma 三大因子推估工作台
+            </h3>
+            <button type="button" class="btn-sm" style="background: #FFF0F3; border: 1px solid #D96B82; color: #D96B82; font-weight: 700;" onclick="getAiForecastRecommendation()">
+              <i class="ph-duotone ph-sparkle"></i> AI 重新研讀推薦參數
+            </button>
           </div>
 
           <!-- Business Cycle & Risk Presets Toolbar -->
           <div style="background: #FAF8F5; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
             <div style="font-size: 0.86rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
-              <span>🌐 景氣循環情境模式：</span>
+              <i class="ph-duotone ph-globe-hemisphere-west" style="color: #82776E;"></i>
+              <span>景氣循環情境模式：</span>
             </div>
             <div style="display: flex; gap: 6px; flex-wrap: wrap;">
-              <button type="button" class="btn-sm" id="btn-cycle-expansion" style="font-weight: 600;" onclick="applyCyclePreset('EXPANSION', this)">📈 穩健擴張模式</button>
-              <button type="button" class="btn-sm" id="btn-cycle-destocking" style="font-weight: 600; color: #EF4444;" onclick="applyCyclePreset('DESTOCKING', this)">📉 產業去庫存 / 下行週期</button>
-              <button type="button" class="btn-sm" id="btn-cycle-restructuring" style="font-weight: 600; color: #818CF8;" onclick="applyCyclePreset('RESTRUCTURING', this)">✂️ 降本增效 / 重組模式</button>
-              <button type="button" class="btn-sm" style="background: #FFF0F3; border: 1px solid var(--primary-pink); color: #D96B82; font-weight: 700;" onclick="scanCycleDownsideRisks()">🤖 AI 掃描下行風險</button>
+              <button type="button" class="btn-sm" id="btn-cycle-expansion" style="font-weight: 600;" onclick="applyCyclePreset('EXPANSION', this)">
+                <i class="ph-duotone ph-trend-up"></i> 穩健擴張模式
+              </button>
+              <button type="button" class="btn-sm" id="btn-cycle-destocking" style="font-weight: 600; color: #EF4444;" onclick="applyCyclePreset('DESTOCKING', this)">
+                <i class="ph-duotone ph-trend-down"></i> 產業去庫存 / 下行週期
+              </button>
+              <button type="button" class="btn-sm" id="btn-cycle-restructuring" style="font-weight: 600; color: #818CF8;" onclick="applyCyclePreset('RESTRUCTURING', this)">
+                <i class="ph-duotone ph-scissors"></i> 降本增效 / 重組模式
+              </button>
+              <button type="button" class="btn-sm" style="background: #FFF0F3; border: 1px solid var(--primary-pink); color: #D96B82; font-weight: 700;" onclick="scanCycleDownsideRisks()">
+                <i class="ph-duotone ph-shield-warning"></i> AI 掃描下行風險
+              </button>
             </div>
           </div>
 
@@ -220,10 +287,16 @@
           <!-- Dynamic Breakdown Table 1: Revenue Segments -->
           <div style="margin-bottom: 18px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <h4 style="margin: 0; font-size: 0.95rem; color: #D96B82;">📊 1. 營業收入業務細拆 (Revenue Breakdown)</h4>
+              <h4 style="margin: 0; font-size: 0.95rem; color: #D96B82;">
+                <i class="ph-duotone ph-chart-bar"></i> 1. 營業收入業務細拆 (Revenue Breakdown)
+              </h4>
               <div style="display: flex; gap: 6px;">
-                <button type="button" class="btn-sm" onclick="normalizeRevenueShares()">⚖️ 依金額重算比重</button>
-                <button type="button" class="btn-sm" onclick="addRevenueSegmentRow()">➕ 新增業務線</button>
+                <button type="button" class="btn-sm" onclick="normalizeRevenueShares()">
+                  <i class="ph-duotone ph-calculator"></i> 依金額重算比重
+                </button>
+                <button type="button" class="btn-sm" onclick="addRevenueSegmentRow()">
+                  <i class="ph-duotone ph-plus-circle"></i> 新增業務線
+                </button>
               </div>
             </div>
             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden;">
@@ -254,8 +327,12 @@
           <!-- Dynamic Breakdown Table 2: COGS Segments -->
           <div style="margin-bottom: 18px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-main);">📦 2. 營業成本細拆 (COGS Breakdown)</h4>
-              <button type="button" class="btn-sm" onclick="addCogsSegmentRow()">➕ 新增成本項目</button>
+              <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-main);">
+                <i class="ph-duotone ph-package"></i> 2. 營業成本細拆 (COGS Breakdown)
+              </h4>
+              <button type="button" class="btn-sm" onclick="addCogsSegmentRow()">
+                <i class="ph-duotone ph-plus-circle"></i> 新增成本項目
+              </button>
             </div>
             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden;">
               <thead>
@@ -293,8 +370,12 @@
           <!-- Dynamic Breakdown Table 3: OpEx Segments -->
           <div style="margin-bottom: 18px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-main);">💼 3. 營業費用細拆 (Operating Expenses Breakdown)</h4>
-              <button type="button" class="btn-sm" onclick="addOpexSegmentRow()">➕ 新增費用項目</button>
+              <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-main);">
+                <i class="ph-duotone ph-briefcase"></i> 3. 營業費用細拆 (Operating Expenses Breakdown)
+              </h4>
+              <button type="button" class="btn-sm" onclick="addOpexSegmentRow()">
+                <i class="ph-duotone ph-plus-circle"></i> 新增費用項目
+              </button>
             </div>
             <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden;">
               <thead>
@@ -321,21 +402,29 @@
 
           <!-- Natural Language Steer AI Prompt -->
           <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
-            <label style="font-size: 0.88rem; font-weight: 600;">🗣️ 自然語言 AI 智慧微調 (可輸入增刪業務線或調整成長率)：</label>
+            <label style="font-size: 0.88rem; font-weight: 600;">
+              <i class="ph-duotone ph-magic-wand" style="color: #D96B82;"></i> 自然語言 AI 智慧微調 (可輸入增刪業務線或調整成長率)：
+            </label>
             <div style="display: flex; gap: 8px; margin-top: 6px;">
               <input type="text" id="fc-ai-steer-prompt" class="form-control" placeholder="例如：將 YouTube 廣告成長調高至 20%，並新增 AI 代理人業務線" style="font-size: 0.85rem;">
-              <button type="button" class="btn-sm" style="white-space: nowrap; background: #D96B82; color: #FFF; font-weight: 600;" onclick="steerForecastModelWithAi()">✨ AI 微調</button>
+              <button type="button" class="btn-sm" style="white-space: nowrap; background: #D96B82; color: #FFF; font-weight: 600;" onclick="steerForecastModelWithAi()">
+                <i class="ph-duotone ph-sparkle"></i> AI 微調
+              </button>
             </div>
             <div id="ai-steer-feedback" style="display: none; font-size: 0.82rem; color: #D96B82; margin-top: 6px;"></div>
           </div>
 
-          <button class="btn-primary" style="font-size: 1rem; font-weight: 700;" onclick="executeForecast()">⚡ 執行 3 年 Pro-Forma 損益表與估值推算</button>
+          <button class="btn-primary" style="font-size: 1rem; font-weight: 700;" onclick="executeForecast()">
+            <i class="ph-duotone ph-play-circle"></i> 執行 3 年 Pro-Forma 損益表與估值推算
+          </button>
         </div>
 
         <div class="glass-card">
-          <h3 class="card-title">📈 損益表推算、EPS 預估與估值結果</h3>
+          <h3 class="card-title">
+            <i class="ph-duotone ph-presentation-chart" style="color: #D96B82;"></i> 損益表推算、EPS 預估與估值結果
+          </h3>
           <div id="forecast-output" class="output-box" style="white-space: normal;">
-            尚未執行預測。請於左側設定細拆參數後，點擊下方「⚡ 執行 3 年 Pro-Forma 損益表與估值推算」。
+            尚未執行預測。請於左側設定細拆參數後，點擊下方「執行 3 年 Pro-Forma 損益表與估值推算」。
           </div>
         </div>
       </div>
@@ -345,7 +434,9 @@
     <div id="tab-review" class="tab-panel">
       <div class="card-grid">
         <div class="glass-card">
-          <h3 class="card-title">⚖️ 財報開獎復盤與歸因診斷</h3>
+          <h3 class="card-title">
+            <i class="ph-duotone ph-scales" style="color: #D96B82;"></i> 財報開獎復盤與歸因診斷
+          </h3>
           <div class="form-group">
             <label>股票代號 (Ticker)</label>
             <input type="text" id="rv-ticker" class="form-control" value="GOOG">
@@ -362,11 +453,15 @@
             <label>真實毛利率 (%)</label>
             <input type="number" id="rv-actual-gm" class="form-control" value="58.5" step="0.1">
           </div>
-          <button class="btn-primary" onclick="executeReview()">⚖️ 執行復盤診斷與偏差歸因</button>
+          <button class="btn-primary" onclick="executeReview()">
+            <i class="ph-duotone ph-scales"></i> 執行復盤診斷與偏差歸因
+          </button>
         </div>
 
         <div class="glass-card">
-          <h3 class="card-title">🔍 復盤報告與經驗迭代</h3>
+          <h3 class="card-title">
+            <i class="ph-duotone ph-clipboard-text" style="color: #D96B82;"></i> 復盤報告與經驗迭代
+          </h3>
           <div id="review-output" class="output-box" style="white-space: normal;">尚未執行復盤。輸入開獎數據後點擊左側按鈕。</div>
         </div>
       </div>
@@ -375,13 +470,15 @@
     <!-- Tab 5: Reports -->
     <div id="tab-reports" class="tab-panel">
       <div class="glass-card">
-        <h3 class="card-title">📁 本地報告與 NotebookLM 雲端資料庫</h3>
+        <h3 class="card-title">
+          <i class="ph-duotone ph-folder-notch-open" style="color: #D96B82;"></i> 本地報告與 NotebookLM 雲端資料庫
+        </h3>
         <div id="reports-list">載入報告列表中...</div>
       </div>
     </div>
 
   </div>
 
-  <script src="/static/js/app.js?v=5.1.0"></script>
+  <script src="/static/js/app.js?v=5.2.0"></script>
 </body>
 </html>
