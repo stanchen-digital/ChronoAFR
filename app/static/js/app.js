@@ -1,11 +1,58 @@
-// Frontend Application Logic for ChronoAFR (v5.0.3 Data Fetching, Three-Factor Synthesis Pipeline & Pro-Forma Engine)
+// Frontend Application Logic for ChronoAFR (v5.1.0 Institutional Multi-Module Target Governance Pipeline)
+
+// Global State
+let activeTargetTicker = "GOOG"; // Default active locked target ticker
+let revenueSegments = [];
+let cogsSegments = [];
+let opexSegments = [];
+let availableDocsList = [];
+let currentCategoryFilter = 'ALL';
+
+let latestAiQuery = "";
+let latestAiAnswer = "";
+let latestSelectedFiles = [];
+let latestForecastPayload = null; // Holds the AI synthesized structured forecast payload
 
 document.addEventListener('DOMContentLoaded', () => {
+  setActiveTargetTicker(activeTargetTicker);
   loadAvailableDocuments();
   if (document.getElementById('fc-ticker')) {
     loadTickerFinancialHistory();
   }
 });
+
+function getCompanyDisplayName(ticker) {
+  const t = (ticker || "").trim().toUpperCase();
+  if (t === "GOOG" || t === "GOOGL" || t === "GOOGLE" || t === "ALPHABET") return "Alphabet (Google)";
+  if (t === "AMZN" || t === "AMAZON") return "Amazon.com, Inc.";
+  if (t === "NVDA" || t === "NVIDIA") return "NVIDIA Corporation";
+  if (t === "2330" || t === "TSMC" || t === "台積電") return "台灣積體電路製造 (TSMC)";
+  return t;
+}
+
+function setActiveTargetTicker(ticker) {
+  if (!ticker) return;
+  activeTargetTicker = ticker.trim().toUpperCase();
+  const displayName = `${activeTargetTicker} (${getCompanyDisplayName(activeTargetTicker)})`;
+
+  // Update header badges and banners
+  const globalEl = document.getElementById('global-active-ticker-display');
+  if (globalEl) globalEl.innerText = displayName;
+
+  const tab2Banner = document.getElementById('tab2-target-name-banner');
+  if (tab2Banner) tab2Banner.innerText = displayName;
+
+  const tab3Banner = document.getElementById('tab3-target-name-banner');
+  if (tab3Banner) tab3Banner.innerText = displayName;
+
+  // Sync inputs
+  if (document.getElementById('fc-ticker')) {
+    document.getElementById('fc-ticker').value = activeTargetTicker;
+  }
+  if (document.getElementById('rv-ticker')) {
+    document.getElementById('rv-ticker').value = activeTargetTicker;
+  }
+}
 
 function switchTab(tabId) {
   const targetPanel = document.getElementById(tabId);
@@ -23,6 +70,9 @@ function switchTab(tabId) {
 
   if (tabId === 'tab-rag') {
     loadAvailableDocuments();
+    // Hide any previous mismatch container upon entering
+    const mismatchBox = document.getElementById('mismatch-alert-container');
+    if (mismatchBox) mismatchBox.style.display = 'none';
   } else if (tabId === 'tab-forecast') {
     if (revenueSegments.length === 0) {
       loadTickerFinancialHistory();
@@ -31,18 +81,6 @@ function switchTab(tabId) {
     loadReports();
   }
 }
-
-// Global State for Dynamic Pro-Forma Workbench
-let revenueSegments = [];
-let cogsSegments = [];
-let opexSegments = [];
-let availableDocsList = [];
-let currentCategoryFilter = 'ALL';
-
-let latestAiQuery = "";
-let latestAiAnswer = "";
-let latestSelectedFiles = [];
-let latestForecastPayload = null; // Holds the AI synthesized structured forecast payload
 
 // Safe Number Formatter
 function fmtNum(val, digits = 1) {
@@ -65,16 +103,16 @@ function formatMarkdownText(md) {
 }
 
 // -----------------------------------------------------------------------------
-// Tab 1: Data Fetching Engine
+// Tab 1: Data Fetching Engine & Target Confirmation Transition
 // -----------------------------------------------------------------------------
 
 async function executeFetch() {
-  const ticker = document.getElementById('fetch-ticker')?.value.trim().toUpperCase() || 'NVDA';
+  const ticker = document.getElementById('fetch-ticker')?.value.trim().toUpperCase() || 'GOOG';
   const source = document.getElementById('fetch-source')?.value || 'all';
   const outBox = document.getElementById('fetch-output');
 
   if (outBox) {
-    outBox.innerHTML = '<div style="font-size: 0.95rem; color: #82776E; padding: 12px;">⏳ 正在連線官方資料庫 (SEC/MOPS/FRED/GDrive) 擷取並解析最新財報...</div>';
+    outBox.innerHTML = `<div style="font-size: 0.95rem; color: #82776E; padding: 12px;">⏳ 正在連線官方資料庫擷取並解析 【${ticker}】 最新財報與總經數據...</div>`;
   }
 
   try {
@@ -90,12 +128,33 @@ async function executeFetch() {
     const data = await res.json();
 
     if (data.status === 'success') {
+      const companyName = getCompanyDisplayName(ticker);
       let html = `<div style="line-height: 1.8; font-size: 0.92rem;">`;
       html += `<div style="font-weight: 700; color: #2E7D32; margin-bottom: 8px;">✅ 數據擷取與解析完成！</div>`;
       (data.results || []).forEach(r => {
         html += `<div>• ${r}</div>`;
       });
       html += `<div style="margin-top: 10px; font-size: 0.82rem; color: #82776E;">📂 檔案已同步至 NotebookLM 雲端資料夾：<code>${data.gdrive_path}</code></div>`;
+
+      // Confirmation Banner to Lock Target and Proceed to Tab 2
+      html += `
+        <div style="margin-top: 16px; background: #FFF5F7; border: 1.5px solid var(--primary-pink); border-radius: 8px; padding: 16px;">
+          <div style="font-weight: 700; color: #D96B82; font-size: 1rem; margin-bottom: 6px;">
+            🎉 目標確認：是否以【${ticker} - ${companyName}】作為本次分析研究目標？
+          </div>
+          <div style="font-size: 0.86rem; color: #4A4036; margin-bottom: 12px;">
+            確認後系統將全域鎖定研究主體為 <strong>${ticker}</strong>，並自動為您切換至 <strong>Step 2. AI 財報問答</strong> 同步精準勾選該公司文件。
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn-primary" style="width: auto; padding: 8px 18px; font-size: 0.92rem; font-weight: 700; background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%);" onclick="confirmTargetAndProceedToTab2('${ticker}')">
+              ✅ 確認以此公司進行分析，進入第 2 步 (AI 財報問答)
+            </button>
+            <button type="button" class="btn-sm" style="background: #FFF; border: 1px solid var(--card-border);" onclick="document.getElementById('fetch-ticker').focus()">
+              🔄 重新修改代號
+            </button>
+          </div>
+        </div>
+      `;
       html += `</div>`;
       if (outBox) outBox.innerHTML = html;
       loadAvailableDocuments(); // Refresh document list in Tab 2!
@@ -107,8 +166,15 @@ async function executeFetch() {
   }
 }
 
+function confirmTargetAndProceedToTab2(ticker) {
+  setActiveTargetTicker(ticker);
+  switchTab('tab-rag');
+  autoSelectTargetDocs(ticker);
+  loadTickerFinancialHistory(); // Pre-load target financial data into Tab 3 state
+}
+
 // -----------------------------------------------------------------------------
-// Tab 2: Document Selector & RAG Query
+// Tab 2: Document Alignment & Consistency Check Engine
 // -----------------------------------------------------------------------------
 
 async function loadAvailableDocuments() {
@@ -137,9 +203,14 @@ async function loadAvailableDocuments() {
       else if (doc.file_type === 'XLSX' || doc.file_type === 'CSV') badgeColor = '#34D399';
       else if (doc.file_type === 'DOCX') badgeColor = '#818CF8';
 
+      // Auto-check if matches active target ticker or macro
+      const isTarget = isDocRelatedToTicker(doc.filename, activeTargetTicker);
+      const isMacro = doc.filename.toLowerCase().includes('macro') || doc.filename.toLowerCase().includes('fred');
+      const shouldCheck = isTarget || isMacro;
+
       html += `
         <label class="doc-item" data-type="${doc.file_type}" style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; padding: 5px 0; cursor: pointer; border-bottom: 1px dashed rgba(0,0,0,0.05);">
-          <input type="checkbox" class="doc-chk" value="${doc.filename}" onchange="updateSelectedCountBadge()" ${doc.filename.includes('AMZN') || doc.filename.includes('Amazon') ? 'checked' : ''}>
+          <input type="checkbox" class="doc-chk" value="${doc.filename}" onchange="updateSelectedCountBadge()" ${shouldCheck ? 'checked' : ''}>
           <span style="font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.05); color: ${badgeColor};">${doc.file_type}</span>
           <span style="word-break: break-all;">${doc.display_label}</span>
           <span style="font-size: 0.75rem; color: #82776E; margin-left: auto;">(${doc.size_kb} KB)</span>
@@ -154,6 +225,127 @@ async function loadAvailableDocuments() {
     console.error("loadAvailableDocuments error:", err);
     container.innerHTML = `<div style="font-size: 0.85rem; color: #D96B82;">⚠️ 載入檔案清單失敗: ${err.message} <button type="button" onclick="loadAvailableDocuments()" style="margin-left: 8px;">重試</button></div>`;
   }
+}
+
+function isDocRelatedToTicker(filename, ticker) {
+  if (!filename || !ticker) return false;
+  const fn = filename.toLowerCase();
+  const t = ticker.toLowerCase();
+
+  if (fn.includes(t)) return true;
+  if (t === 'goog' || t === 'googl') {
+    return fn.includes('goog') || fn.includes('google') || fn.includes('alphabet');
+  }
+  if (t === 'amzn') {
+    return fn.includes('amzn') || fn.includes('amazon');
+  }
+  if (t === 'nvda') {
+    return fn.includes('nvda') || fn.includes('nvidia');
+  }
+  if (t === '2330') {
+    return fn.includes('2330') || fn.includes('tsmc') || fn.includes('台積');
+  }
+  return false;
+}
+
+function autoSelectTargetDocs(ticker) {
+  const targetTicker = ticker || activeTargetTicker;
+  document.querySelectorAll('.doc-chk').forEach(chk => {
+    const isTarget = isDocRelatedToTicker(chk.value, targetTicker);
+    const isMacro = chk.value.toLowerCase().includes('macro') || chk.value.toLowerCase().includes('fred');
+    chk.checked = (isTarget || isMacro);
+  });
+  updateSelectedCountBadge();
+
+  // Hide mismatch alert box if open
+  const mismatchBox = document.getElementById('mismatch-alert-container');
+  if (mismatchBox) mismatchBox.style.display = 'none';
+}
+
+function checkDocumentConsistency(selectedDocs, targetTicker) {
+  if (!selectedDocs || selectedDocs.length === 0) {
+    return {
+      consistent: false,
+      reason: "empty",
+      message: "未勾選任何參考文件！"
+    };
+  }
+
+  let hasTargetDoc = false;
+  let foreignTickers = new Set();
+
+  selectedDocs.forEach(doc => {
+    if (isDocRelatedToTicker(doc, targetTicker)) {
+      hasTargetDoc = true;
+    } else if (doc.toLowerCase().includes('macro') || doc.toLowerCase().includes('fred')) {
+      // Macro doc is neutral, allowed with target
+    } else {
+      // Check which foreign ticker it belongs to
+      if (isDocRelatedToTicker(doc, 'AMZN')) foreignTickers.add('Amazon (AMZN)');
+      else if (isDocRelatedToTicker(doc, 'NVDA')) foreignTickers.add('NVIDIA (NVDA)');
+      else if (isDocRelatedToTicker(doc, '2330')) foreignTickers.add('台積電 (2330)');
+      else if (isDocRelatedToTicker(doc, 'GOOG')) foreignTickers.add('Google (GOOG)');
+      else foreignTickers.add(doc);
+    }
+  });
+
+  if (!hasTargetDoc) {
+    return {
+      consistent: false,
+      reason: "no_target_doc",
+      foreign_tickers: Array.from(foreignTickers),
+      message: `您目前鎖定的研究目標公司為【${targetTicker}】，但勾選的研讀文件完全不包含 ${targetTicker} 相關財報，而是勾選了其他公司（${Array.from(foreignTickers).join('、')}）。`
+    };
+  }
+
+  if (foreignTickers.size > 0) {
+    return {
+      consistent: false,
+      reason: "mixed_docs",
+      foreign_tickers: Array.from(foreignTickers),
+      message: `您勾選的文件中同時包含了【${targetTicker}】與其他無關公司（${Array.from(foreignTickers).join('、')}），這可能導致 AI 推論受到干擾或上下文混淆。`
+    };
+  }
+
+  return { consistent: true };
+}
+
+function showMismatchAlert(mismatchInfo, onConfirmAction) {
+  const container = document.getElementById('mismatch-alert-container');
+  if (!container) return;
+
+  const targetName = getCompanyDisplayName(activeTargetTicker);
+
+  container.innerHTML = `
+    <div style="background: #FFF8E7; border: 1.5px solid #F59E0B; border-radius: 8px; padding: 16px; color: #78350F; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);">
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <span style="font-size: 1.4rem;">⚠️</span>
+        <div style="flex: 1;">
+          <h4 style="margin: 0 0 6px 0; font-size: 1.05rem; color: #92400E;">
+            【研讀文件與目標公司不一致警示】
+          </h4>
+          <p style="margin: 0 0 12px 0; font-size: 0.9rem; line-height: 1.5;">
+            ${mismatchInfo.message}
+          </p>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button type="button" class="btn-sm" style="background: #F59E0B; color: #FFF; font-weight: 700; border: none; padding: 8px 14px;" onclick="autoFixAndRunResearch()">
+              🔄 一鍵修正：自動改勾選 ${activeTargetTicker} 相關檔案並繼續
+            </button>
+            <button type="button" class="btn-sm" style="background: #FFF; border: 1px solid #D97706; color: #92400E; font-weight: 600;" onclick="switchTab('tab-fetch')">
+              ⬅️ 回到 Step 1：重新設定目標公司代號
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  container.style.display = 'block';
+  container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function autoFixAndRunResearch() {
+  autoSelectTargetDocs(activeTargetTicker);
+  runAiThreeFactorResearch();
 }
 
 function setDocCategoryFilter(cat, btn) {
@@ -220,39 +412,35 @@ function selectGDriveDocsOnly() {
 }
 
 // -----------------------------------------------------------------------------
-// Tab 2: Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.0.3)
+// Tab 2: Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.1.0)
 // -----------------------------------------------------------------------------
 
 async function runAiThreeFactorResearch() {
   const selectedDocs = Array.from(document.querySelectorAll('.doc-chk:checked')).map(cb => cb.value);
-  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
+  const ticker = activeTargetTicker;
 
   const outBox = document.getElementById('rag-output');
   const toolbar = document.getElementById('ai-answer-toolbar');
   const applyBtn = document.getElementById('btn-apply-forecast-to-tab3');
+  const mismatchBox = document.getElementById('mismatch-alert-container');
 
   if (toolbar) toolbar.style.display = 'none';
   if (applyBtn) applyBtn.style.display = 'none';
 
-  if (!selectedDocs || selectedDocs.length === 0) {
-    if (outBox) {
-      outBox.innerHTML = `
-        <div style="background: #FFF0F3; border: 1.5px solid #EF4444; border-radius: 8px; padding: 16px; color: #EF4444;">
-          <h4 style="margin: 0 0 8px 0; font-size: 1.05rem;">⚠️ 資料不足警示 (Insufficient Data)</h4>
-          <p style="margin: 0; font-size: 0.9rem; color: #4A4036;">
-            您尚未在上方勾選任何參考文件！請至少勾選 1 份目標公司之 <strong>10-K/10-Q 財報、年報 PDF 或月營收研報</strong>，AI 才能進行前瞻三大因子深度研讀與成長率推算。
-          </p>
-        </div>
-      `;
-    }
+  // Step 1: Check Consistency
+  const check = checkDocumentConsistency(selectedDocs, ticker);
+  if (!check.consistent) {
+    showMismatchAlert(check);
     return;
+  } else {
+    if (mismatchBox) mismatchBox.style.display = 'none';
   }
 
   if (outBox) {
     outBox.innerHTML = `
       <div style="font-size: 0.95rem; color: #82776E; padding: 16px;">
-        🤖 <strong>Gemini AI 正在深入研讀被選取的 ${selectedDocs.length} 份文件...</strong><br><br>
-        • 正在進行【資料充分性檢核】...<br>
+        🤖 <strong>Gemini AI 正在深入研讀 【${ticker} (${getCompanyDisplayName(ticker)})】 被選取的 ${selectedDocs.length} 份文件...</strong><br><br>
+        • 正在進行【目標公司一致性與資料充分性檢核】...<br>
         • 正在計算【(1) 未來營收與業務細項年增率】...<br>
         • 正在推估【(2) 未來營業成本結構與毛利率變化】...<br>
         • 正在分析【(3) 未來營業費用 (研發/行銷/管理) 支出率】...
@@ -299,7 +487,7 @@ async function runAiThreeFactorResearch() {
     let html = `
       <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; line-height: 1.65; font-size: 0.92rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1.5px solid var(--card-border); padding-bottom: 10px;">
-          <span style="font-size: 1.05rem; font-weight: 700; color: #D96B82;">📊 ${data.ticker || ticker} 前瞻三大因子深度研讀報告</span>
+          <span style="font-size: 1.05rem; font-weight: 700; color: #D96B82;">📊 ${data.ticker || ticker} (${getCompanyDisplayName(data.ticker || ticker)}) 前瞻三大因子深度研讀報告</span>
           <span style="font-size: 0.8rem; background: #E8F5E9; color: #2E7D32; font-weight: 700; padding: 4px 10px; border-radius: 6px;">✅ 資料充足 (Data Sufficient)</span>
         </div>
         <div style="color: var(--text-main); margin-bottom: 20px; font-size: 0.93rem;">
@@ -307,7 +495,7 @@ async function runAiThreeFactorResearch() {
         </div>
         <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
           <div>
-            <div style="font-weight: 700; color: #D96B82; font-size: 0.95rem;">💡 審閱確認：若您認可 AI 的前瞻推論與年增率</div>
+            <div style="font-weight: 700; color: #D96B82; font-size: 0.95rem;">💡 審閱確認：若您認可 AI 對 ${data.ticker || ticker} 的前瞻推論與年增率</div>
             <div style="font-size: 0.83rem; color: #82776E;">點擊右側按鈕將自動注入「前瞻財務預測」工作台並生成 3 年 Pro-Forma 損益表與 EPS！</div>
           </div>
           <button type="button" class="btn-primary" style="width: auto; padding: 10px 20px; font-weight: 700; font-size: 0.92rem; background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%);" onclick="applyAiForecastToTab3()">
@@ -332,6 +520,8 @@ function applyAiForecastToTab3() {
   }
 
   const data = latestForecastPayload;
+  const targetTicker = data.ticker || activeTargetTicker;
+  setActiveTargetTicker(targetTicker);
 
   // 1. Fill Header Controls
   if (data.ticker && document.getElementById('fc-ticker')) {
@@ -377,7 +567,7 @@ function applyAiForecastToTab3() {
   const steerFeedback = document.getElementById('ai-steer-feedback');
   if (steerFeedback) {
     steerFeedback.style.display = 'block';
-    steerFeedback.innerText = "✨ 成功從「AI 財報研讀中樞」代入三大因子推論，並自動生成 3 年 Pro-Forma 損益表與 EPS！";
+    steerFeedback.innerText = `✨ 成功從「AI 財報研讀中樞」代入 ${targetTicker} 三大因子推論，並自動生成 3 年 Pro-Forma 損益表與 EPS！`;
   }
 }
 
@@ -387,6 +577,13 @@ async function executeAsk() {
 
   if (!query) {
     alert("請輸入您的投資分析問題！");
+    return;
+  }
+
+  // Check Consistency
+  const check = checkDocumentConsistency(selectedDocs, activeTargetTicker);
+  if (!check.consistent) {
+    showMismatchAlert(check);
     return;
   }
 
@@ -404,7 +601,8 @@ async function executeAsk() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         query,
-        selected_files: selectedDocs
+        selected_files: selectedDocs,
+        ticker: activeTargetTicker
       })
     });
     const data = await res.json();
@@ -421,8 +619,8 @@ async function executeAsk() {
 
 function downloadAnswerMarkdown() {
   if (!latestAiAnswer) return;
-  const filename = `ChronoAFR_AI_Analysis_${new Date().toISOString().slice(0, 10)}.md`;
-  const content = `# [ChronoAFR AI 分析報告] ${latestAiQuery}\n\n- **產出時間**: ${new Date().toLocaleString()}\n- **參考文件**: ${latestSelectedFiles.join(', ') || '全庫檢索'}\n\n## 分析回答內容\n\n${latestAiAnswer}\n`;
+  const filename = `ChronoAFR_${activeTargetTicker}_AI_Analysis_${new Date().toISOString().slice(0, 10)}.md`;
+  const content = `# [ChronoAFR AI 分析報告] ${latestAiQuery}\n\n- **目標公司**: ${activeTargetTicker} (${getCompanyDisplayName(activeTargetTicker)})\n- **產出時間**: ${new Date().toLocaleString()}\n- **參考文件**: ${latestSelectedFiles.join(', ') || '全庫檢索'}\n\n## 分析回答內容\n\n${latestAiAnswer}\n`;
   
   const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
@@ -468,17 +666,16 @@ async function syncAnswerToNotebookLM() {
 
 async function loadTickerFinancialHistory() {
   const tickerInput = document.getElementById('fc-ticker');
-  if (!tickerInput) return;
-  const ticker = tickerInput.value.trim().toUpperCase() || 'AMZN';
+  const ticker = tickerInput ? tickerInput.value.trim().toUpperCase() : activeTargetTicker;
 
   try {
     const res = await fetch(`/api/financial_history/${ticker}`);
     const data = await res.json();
 
     document.getElementById('fc-base-rev').value = data.base_revenue;
-    if (document.getElementById('fc-current-price')) document.getElementById('fc-current-price').value = data.current_price || 185.0;
-    if (document.getElementById('fc-shares-outstanding')) document.getElementById('fc-shares-outstanding').value = data.shares_outstanding || 10400.0;
-    if (document.getElementById('fc-pe-avg')) document.getElementById('fc-pe-avg').value = data.historical_pe_avg || 35.0;
+    if (document.getElementById('fc-current-price')) document.getElementById('fc-current-price').value = data.current_price || 180.0;
+    if (document.getElementById('fc-shares-outstanding')) document.getElementById('fc-shares-outstanding').value = data.shares_outstanding || 12400.0;
+    if (document.getElementById('fc-pe-avg')) document.getElementById('fc-pe-avg').value = data.historical_pe_avg || 24.0;
 
     revenueSegments = data.revenue_segments || [];
     cogsSegments = data.cogs_segments || [];
@@ -494,7 +691,7 @@ async function loadTickerFinancialHistory() {
 }
 
 async function getAiForecastRecommendation() {
-  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
+  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || activeTargetTicker;
   const feedbackEl = document.getElementById('ai-steer-feedback');
 
   if (feedbackEl) {
@@ -556,32 +753,32 @@ function applyCyclePreset(presetType, btn) {
   if (presetType === 'EXPANSION') {
     // Standard Healthy Growth
     revenueSegments.forEach((seg, idx) => {
-      if (idx === 0) seg.growth_y1 = 0.24;
-      else if (idx === 1) seg.growth_y1 = 0.12;
-      else seg.growth_y1 = 0.10;
+      if (idx === 0) seg.growth_y1 = 0.20;
+      else if (idx === 1) seg.growth_y1 = 0.28;
+      else seg.growth_y1 = 0.12;
     });
     cogsSegments.forEach(cg => cg.growth_y1 = 0.10);
     if (feedbackEl) {
       feedbackEl.style.display = 'block';
-      feedbackEl.innerText = "📈 已切換為【穩健擴張模式】：各業務線維持常態正成長。";
+      feedbackEl.innerText = "📈 已切換為【穩健擴張模式】：各核心業務線維持常態正成長。";
     }
   } else if (presetType === 'DESTOCKING') {
     // Downside Destocking / Recession Cycle (Negative Growth)
     revenueSegments.forEach((seg, idx) => {
-      if (idx === 0) seg.growth_y1 = 0.08;
-      else if (idx === 1) seg.growth_y1 = -0.15; // Consumer/Retail drops -15%
-      else seg.growth_y1 = -0.08; // Intl retail drops -8%
+      if (idx === 0) seg.growth_y1 = 0.04;
+      else if (idx === 1) seg.growth_y1 = 0.12;
+      else seg.growth_y1 = -0.10; // Ad network/hardware drops -10%
     });
     cogsSegments.forEach(cg => cg.growth_y1 = 0.04);
     if (feedbackEl) {
       feedbackEl.style.display = 'block';
-      feedbackEl.innerText = "📉 已切換為【產業去庫存 / 下行週期】：零售與硬體業務進入負成長 (-8% ~ -15%)，模擬毛利率受壓。";
+      feedbackEl.innerText = "📉 已切換為【產業去庫存 / 下行週期】：廣告聯播網與硬體業務進入負成長 (-10%)，模擬毛利率受壓。";
     }
   } else if (presetType === 'RESTRUCTURING') {
     // Cost Restructuring / Year of Efficiency (OpEx cuts)
-    revenueSegments.forEach(seg => seg.growth_y1 = 0.06);
+    revenueSegments.forEach(seg => seg.growth_y1 = 0.08);
     opexSegments.forEach(op => {
-      op.ratio_pct = Math.max(0.04, op.ratio_pct * 0.85); // 15% OpEx cut
+      op.ratio_pct = Math.max(0.03, op.ratio_pct * 0.85); // 15% OpEx cut
     });
     if (feedbackEl) {
       feedbackEl.style.display = 'block';
@@ -596,12 +793,12 @@ function applyCyclePreset(presetType, btn) {
 }
 
 async function scanCycleDownsideRisks() {
-  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
+  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || activeTargetTicker;
   const feedbackEl = document.getElementById('ai-steer-feedback');
 
   if (feedbackEl) {
     feedbackEl.style.display = 'block';
-    feedbackEl.innerText = `🤖 Gemini AI 正在跨維度交叉比對 ${ticker} 10-K 存貨週轉天數 (DSI)、MD&A 風險提示與總經利率環境...`;
+    feedbackEl.innerText = `🤖 Gemini AI 正在跨維度交叉比對 ${ticker} 10-K 存貨天數、MD&A 風險提示與總經利率環境...`;
   }
 
   try {
@@ -613,12 +810,12 @@ async function scanCycleDownsideRisks() {
     const data = await res.json();
 
     let output = `🔍 【${ticker} 景氣循環與下行風險掃描結果】\n`;
-    output += `• 循環階段判定：${data.cycle_phase || '景氣下行/去庫存期'}\n`;
-    output += `• 風險核心摘要：${data.risk_summary || '硬體與消費業務面臨庫存去化壓力'}\n`;
+    output += `• 循環階段判定：${data.cycle_phase || '擴張與 AI 投資加速期'}\n`;
+    output += `• 風險核心摘要：${data.risk_summary || '流量獲取成本 (TAC) 與雲端硬體折舊加劇'}\n`;
     if (data.downside_segments && data.downside_segments.length > 0) {
       output += `• 建議設定負成長業務：${data.downside_segments.map(d => `${d.name} (${(d.recommended_growth_y1*100).toFixed(1)}% YoY)`).join(', ')}\n`;
     }
-    output += `• 獲利拐點展望：${data.turnaround_outlook || '預計 Y2 築底，Y3 進入新一輪 AI/產品升級成長循環'}`;
+    output += `• 獲利拐點展望：${data.turnaround_outlook || '預計 AI 商業化推進將在 Y2~Y3 帶動利潤率擴張'}`;
 
     if (feedbackEl) {
       feedbackEl.innerText = output;
@@ -628,7 +825,7 @@ async function scanCycleDownsideRisks() {
   }
 }
 
-// Table 1: Revenue Segments Rendering (with negative growth styling)
+// Table 1: Revenue Segments Rendering
 function renderRevenueSegmentRows() {
   const tbody = document.getElementById('tbody-revenue-segments');
   if (!tbody) return;
@@ -774,7 +971,7 @@ function normalizeRevenueShares() {
 }
 
 function addCogsSegmentRow(targetIdx = null) {
-  const newRow = { name: `自訂成本項目 ${cogsSegments.length + 1}`, base_amount: 50000.0, ratio_pct: 0.10, growth_y1: 0.10 };
+  const newRow = { name: `自訂成本項目 ${cogsSegments.length + 1}`, base_amount: 20000.0, ratio_pct: 0.05, growth_y1: 0.10 };
   if (targetIdx !== null && targetIdx !== undefined && targetIdx >= 0) {
     cogsSegments.splice(targetIdx + 1, 0, newRow);
   } else {
@@ -791,7 +988,7 @@ function removeCogsSegmentRow(idx) {
 }
 
 function addOpexSegmentRow(targetIdx = null) {
-  const newRow = { name: `自訂費用項目 ${opexSegments.length + 1}`, base_amount: 5000.0, ratio_pct: 0.05 };
+  const newRow = { name: `自訂費用項目 ${opexSegments.length + 1}`, base_amount: 5000.0, ratio_pct: 0.02 };
   if (targetIdx !== null && targetIdx !== undefined && targetIdx >= 0) {
     opexSegments.splice(targetIdx + 1, 0, newRow);
   } else {
@@ -811,7 +1008,7 @@ function removeOpexSegmentRow(idx) {
 function recalculateTotals() {
   let totBaseRev = revenueSegments.reduce((sum, s) => sum + (s.base_amount || 0), 0);
   if (totBaseRev === 0) {
-    totBaseRev = parseFloat(document.getElementById('fc-base-rev')?.value) || 717000.0;
+    totBaseRev = parseFloat(document.getElementById('fc-base-rev')?.value) || 402840.0;
   } else {
     document.getElementById('fc-base-rev').value = totBaseRev;
   }
@@ -899,7 +1096,7 @@ function recalculateTotals() {
 }
 
 async function steerForecastModelWithAi() {
-  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
+  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || activeTargetTicker;
   const user_prompt = document.getElementById('fc-ai-steer-prompt')?.value.trim();
   const feedbackEl = document.getElementById('ai-steer-feedback');
 
@@ -923,7 +1120,7 @@ async function steerForecastModelWithAi() {
         current_revenue_segments: revenueSegments,
         current_cogs_segments: cogsSegments,
         current_opex_segments: opexSegments,
-        current_gross_margin: 0.485
+        current_gross_margin: 0.575
       })
     });
     const data = await res.json();
@@ -954,16 +1151,16 @@ async function steerForecastModelWithAi() {
 }
 
 async function executeForecast() {
-  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || 'AMZN';
-  const base_revenue = parseFloat(document.getElementById('fc-base-rev')?.value) || 717000.0;
-  const current_price = parseFloat(document.getElementById('fc-current-price')?.value) || 185.0;
-  const shares_outstanding = parseFloat(document.getElementById('fc-shares-outstanding')?.value) || 10400.0;
-  const historical_pe_avg = parseFloat(document.getElementById('fc-pe-avg')?.value) || 35.0;
+  const ticker = document.getElementById('fc-ticker')?.value.trim().toUpperCase() || activeTargetTicker;
+  const base_revenue = parseFloat(document.getElementById('fc-base-rev')?.value) || 402840.0;
+  const current_price = parseFloat(document.getElementById('fc-current-price')?.value) || 180.0;
+  const shares_outstanding = parseFloat(document.getElementById('fc-shares-outstanding')?.value) || 12400.0;
+  const historical_pe_avg = parseFloat(document.getElementById('fc-pe-avg')?.value) || 24.0;
   const wacc = (parseFloat(document.getElementById('fc-wacc')?.value) || 9.0) / 100.0;
 
   const outBox = document.getElementById('forecast-output');
   if (!outBox) return;
-  outBox.innerHTML = '<div style="font-size: 0.95rem; color: #82776E; padding: 12px;">⚡ 正在計算 2026~2028 完整損益表、預估 EPS、前瞻 P/E 與本益比評價診斷...</div>';
+  outBox.innerHTML = `<div style="font-size: 0.95rem; color: #82776E; padding: 12px;">⚡ 正在計算 【${ticker}】 2026~2028 完整損益表、預估 EPS、前瞻 P/E 與本益比評價診斷...</div>`;
 
   try {
     const res = await fetch('/api/forecast', {
@@ -1002,24 +1199,24 @@ async function executeForecast() {
 
     // Dynamic metrics
     const rev0 = base_revenue;
-    const rev1 = baseProj[0]?.Revenue !== undefined ? baseProj[0].Revenue : rev0 * 1.172;
-    const rev2 = baseProj[1]?.Revenue !== undefined ? baseProj[1].Revenue : rev1 * 1.180;
-    const rev3 = baseProj[2]?.Revenue !== undefined ? baseProj[2].Revenue : rev2 * 1.182;
+    const rev1 = baseProj[0]?.Revenue !== undefined ? baseProj[0].Revenue : rev0 * 1.12;
+    const rev2 = baseProj[1]?.Revenue !== undefined ? baseProj[1].Revenue : rev1 * 1.10;
+    const rev3 = baseProj[2]?.Revenue !== undefined ? baseProj[2].Revenue : rev2 * 1.09;
 
-    const cogs0 = base_revenue * 0.51507;
-    const cogs1 = baseProj[0]?.COGS !== undefined ? baseProj[0].COGS : 429925.0;
-    const cogs2 = baseProj[1]?.COGS !== undefined ? baseProj[1].COGS : 505647.0;
-    const cogs3 = baseProj[2]?.COGS !== undefined ? baseProj[2].COGS : 594625.0;
+    const cogs0 = base_revenue * 0.425;
+    const cogs1 = baseProj[0]?.COGS !== undefined ? baseProj[0].COGS : (cogs0 * 1.11);
+    const cogs2 = baseProj[1]?.COGS !== undefined ? baseProj[1].COGS : (cogs1 * 1.09);
+    const cogs3 = baseProj[2]?.COGS !== undefined ? baseProj[2].COGS : (cogs2 * 1.08);
 
     const gp0 = rev0 - cogs0;
     const gp1 = baseProj[0]?.GrossProfit !== undefined ? baseProj[0].GrossProfit : (rev1 - cogs1);
     const gp2 = baseProj[1]?.GrossProfit !== undefined ? baseProj[1].GrossProfit : (rev2 - cogs2);
     const gp3 = baseProj[2]?.GrossProfit !== undefined ? baseProj[2].GrossProfit : (rev3 - cogs3);
 
-    const opex0 = base_revenue * 0.36959;
-    const opex1 = baseProj[0]?.TotalOpEx !== undefined ? baseProj[0].TotalOpEx : 302481.0;
-    const opex2 = baseProj[1]?.TotalOpEx !== undefined ? baseProj[1].TotalOpEx : 356927.0;
-    const opex3 = baseProj[2]?.TotalOpEx !== undefined ? baseProj[2].TotalOpEx : 421960.0;
+    const opex0 = base_revenue * 0.243;
+    const opex1 = baseProj[0]?.TotalOpEx !== undefined ? baseProj[0].TotalOpEx : (opex0 * 1.10);
+    const opex2 = baseProj[1]?.TotalOpEx !== undefined ? baseProj[1].TotalOpEx : (opex1 * 1.08);
+    const opex3 = baseProj[2]?.TotalOpEx !== undefined ? baseProj[2].TotalOpEx : (opex2 * 1.07);
 
     const op0 = gp0 - opex0;
     const op1 = baseProj[0]?.OperatingIncome !== undefined ? baseProj[0].OperatingIncome : (gp1 - opex1);
@@ -1110,7 +1307,7 @@ async function executeForecast() {
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
           <div>
             <h4 style="margin: 0; color: #D96B82; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-              🚦 投資切入時機診斷與前瞻 P/E 評價
+              🚦 【${ticker}】 投資切入時機診斷與前瞻 P/E 評價
             </h4>
             <div style="font-size: 0.9rem; color: #4A4036; margin-top: 6px;">${timingDesc}</div>
           </div>
@@ -1131,7 +1328,7 @@ async function executeForecast() {
       <!-- Card 2: Full 3-Year Income Statement & EPS Table -->
       <div style="margin-bottom: 24px; background: #FFF; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 18px;">
         <h4 style="margin: 0 0 14px 0; color: var(--text-main); font-size: 1.08rem; display: flex; align-items: center; gap: 8px;">
-          📈 2. 完整 3 年 Pro-Forma 損益表與 EPS 推算表格 (Full Income Statement & EPS Table)
+          📈 2. 完整 3 年 Pro-Forma 損益表與 EPS 推算表格 (${ticker} Full Income Statement)
         </h4>
         <div style="overflow-x: auto;">
           <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; background: #FFF;">
@@ -1233,11 +1430,11 @@ async function executeForecast() {
             <tbody>
               <tr style="border-bottom: 1px solid var(--card-border);">
                 <td style="padding: 10px; font-weight: 700; color: #34D399;">🟢 Bull Case (樂觀)</td>
-                <td style="padding: 10px;">$${fmtNum(bullProj[0]?.Revenue || (rev1 * 1.08))} <span style="font-size:0.75rem; color:#34D399;">(+${fmtNum(((bullProj[0]?.RevenueGrowth || 0.22)*100), 1)}%)</span></td>
+                <td style="padding: 10px;">$${fmtNum(bullProj[0]?.Revenue || (rev1 * 1.08))} <span style="font-size:0.75rem; color:#34D399;">(+${fmtNum(((bullProj[0]?.RevenueGrowth || 0.16)*100), 1)}%)</span></td>
                 <td style="padding: 10px;">$${fmtNum(bullProj[2]?.Revenue || (rev3 * 1.15))}</td>
                 <td style="padding: 10px;">$${fmtNum(bullProj[2]?.OperatingIncome || (op3 * 1.2))}</td>
                 <td style="padding: 10px;">$${fmtNum(bullProj[2]?.FreeCashFlow || (net3 * 1.2))}</td>
-                <td style="padding: 10px; font-weight: 700; color: #34D399;">$${fmtNum(bullScenario.DCF_Valuation?.ImpliedEnterpriseValue || 2150000)}M</td>
+                <td style="padding: 10px; font-weight: 700; color: #34D399;">$${fmtNum(bullScenario.DCF_Valuation?.ImpliedEnterpriseValue || 2350000)}M</td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border); background: #FFF5F7;">
                 <td style="padding: 10px; font-weight: 700; color: var(--text-main);">🟡 Base Case (基準)</td>
@@ -1245,15 +1442,15 @@ async function executeForecast() {
                 <td style="padding: 10px;">$${fmtNum(rev3)}</td>
                 <td style="padding: 10px;">$${fmtNum(op3)}</td>
                 <td style="padding: 10px;">$${fmtNum(net3 * 0.9)}</td>
-                <td style="padding: 10px; font-weight: 700; color: #D96B82;">$${fmtNum(baseScenario.DCF_Valuation?.ImpliedEnterpriseValue || 1780000)}M</td>
+                <td style="padding: 10px; font-weight: 700; color: #D96B82;">$${fmtNum(baseScenario.DCF_Valuation?.ImpliedEnterpriseValue || 1980000)}M</td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
                 <td style="padding: 10px; font-weight: 700; color: #82776E;">🔴 Bear Case (悲觀)</td>
-                <td style="padding: 10px;">$${fmtNum(bearProj[0]?.Revenue || (rev1 * 0.92))} <span style="font-size:0.75rem; color:#82776E;">(+${fmtNum(((bearProj[0]?.RevenueGrowth || 0.08)*100), 1)}%)</span></td>
+                <td style="padding: 10px;">$${fmtNum(bearProj[0]?.Revenue || (rev1 * 0.92))} <span style="font-size:0.75rem; color:#82776E;">(+${fmtNum(((bearProj[0]?.RevenueGrowth || 0.05)*100), 1)}%)</span></td>
                 <td style="padding: 10px;">$${fmtNum(bearProj[2]?.Revenue || (rev3 * 0.85))}</td>
                 <td style="padding: 10px;">$${fmtNum(bearProj[2]?.OperatingIncome || (op3 * 0.8))}</td>
                 <td style="padding: 10px;">$${fmtNum(bearProj[2]?.FreeCashFlow || (net3 * 0.75))}</td>
-                <td style="padding: 10px; font-weight: 700; color: #82776E;">$${fmtNum(bearScenario.DCF_Valuation?.ImpliedEnterpriseValue || 1420000)}M</td>
+                <td style="padding: 10px; font-weight: 700; color: #82776E;">$${fmtNum(bearScenario.DCF_Valuation?.ImpliedEnterpriseValue || 1550000)}M</td>
               </tr>
             </tbody>
           </table>
@@ -1276,14 +1473,14 @@ async function executeForecast() {
 // -----------------------------------------------------------------------------
 
 async function executeReview() {
-  const ticker = document.getElementById('rv-ticker')?.value || 'AMZN';
+  const ticker = document.getElementById('rv-ticker')?.value || activeTargetTicker;
   const actual_revenue = parseFloat(document.getElementById('rv-actual-rev')?.value) || 0;
   const actual_op_income = parseFloat(document.getElementById('rv-actual-op')?.value) || 0;
   const actual_gross_margin = (parseFloat(document.getElementById('rv-actual-gm')?.value) || 0) / 100.0;
 
   const outBox = document.getElementById('review-output');
   if (!outBox) return;
-  outBox.innerText = "⚖️ 正在比對真實開獎數據並由 Gemini AI 進行偏差診斷...";
+  outBox.innerText = `⚖️ 正在比對 【${ticker}】 真實開獎數據並由 Gemini AI 進行偏差診斷...`;
 
   try {
     const res = await fetch('/api/review', {
