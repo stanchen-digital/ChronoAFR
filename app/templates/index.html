@@ -10,7 +10,7 @@
   <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css">
   <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css">
   
-  <link rel="stylesheet" href="/static/css/style.css?v=5.2.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=5.3.0">
 </head>
 <body>
 
@@ -57,18 +57,19 @@
       </button>
     </nav>
 
-    <!-- Tab 1: Data Fetching -->
+    <!-- Tab 1: Data Fetching (Full-Width Layout) -->
     <div id="tab-fetch" class="tab-panel active">
-      <div class="card-grid">
-        <div class="glass-card">
-          <h3 class="card-title">
-            <i class="ph-duotone ph-cloud-arrow-down" style="color: #D96B82;"></i> 官方數據抓取面板
-          </h3>
-          <div class="form-group">
+      <div class="glass-card full-width">
+        <h3 class="card-title">
+          <i class="ph-duotone ph-cloud-arrow-down" style="color: #D96B82;"></i> 官方數據擷取與目標設定面板
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: 240px 1fr auto; gap: 16px; align-items: end; margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 0;">
             <label>股票代號 (美股如 GOOG / NVDA / AMZN 或 台股 2330)</label>
             <input type="text" id="fetch-ticker" class="form-control" value="GOOG">
           </div>
-          <div class="form-group">
+          <div class="form-group" style="margin-bottom: 0;">
             <label>數據來源 (Data Sources)</label>
             <select id="fetch-source" class="form-control">
               <option value="all">全數據源 (美股 SEC + 台股 MOPS + FRED 總經 + Google Drive 雲端)</option>
@@ -78,21 +79,23 @@
               <option value="gdrive">僅 Google Drive (個人上傳個研/財報 PDF)</option>
             </select>
           </div>
-          <button class="btn-primary" onclick="executeFetch()">
+          <button class="btn-primary" style="width: auto; padding: 10px 24px;" onclick="executeFetch()">
             <i class="ph-duotone ph-arrow-circle-down"></i> 開始抓取並解析 Markdown
           </button>
         </div>
 
-        <div class="glass-card">
-          <h3 class="card-title">
-            <i class="ph-duotone ph-chart-bar" style="color: #D96B82;"></i> 抓取執行結果
-          </h3>
-          <div id="fetch-output" class="output-box">尚未執行抓取。點擊左側按鈕開始擷取美股/台股與總經數據。</div>
+        <div style="margin-top: 18px; border-top: 1px solid var(--card-border); padding-top: 18px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+            <i class="ph-duotone ph-chart-bar" style="color: #D96B82;"></i> 抓取執行日誌與目標確認
+          </h4>
+          <div id="fetch-output" class="output-box" style="min-height: 120px;">
+            尚未執行抓取。點擊上方按鈕開始擷取美股/台股與總經數據。
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Tab 2: Gemini RAG Chat -->
+    <!-- Tab 2: Gemini RAG Chat (Full-Width Sub-Tab Layout) -->
     <div id="tab-rag" class="tab-panel">
       <!-- Target Company Alignment Banner in Tab 2 -->
       <div style="background: #FFF; border: 1.5px solid var(--card-border); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -113,17 +116,25 @@
       <!-- Inconsistency / Mismatch Alert Dialog Container (Hidden by Default) -->
       <div id="mismatch-alert-container" style="display: none; margin-bottom: 18px;"></div>
 
-      <div class="card-grid">
-        <div class="glass-card">
-          <h3 class="card-title">
-            <i class="ph-duotone ph-chat-teardrop-text" style="color: #D96B82;"></i> Gemini AI 財報與總經對話引擎
-          </h3>
+      <!-- Sub-Navigation for Tab 2 -->
+      <div class="sub-nav-tabs">
+        <button class="sub-tab-btn active" id="btn-subtab-rag-setup" onclick="switchRagSubTab('subtab-rag-setup')">
+          <i class="ph-duotone ph-files"></i> 1. 參考文件選取與研讀設定
+        </button>
+        <button class="sub-tab-btn" id="btn-subtab-rag-report" onclick="switchRagSubTab('subtab-rag-report')">
+          <i class="ph-duotone ph-article"></i> 2. AI 深度研讀報告 (全寬視圖)
+        </button>
+      </div>
+
+      <!-- Sub-Tab 2-A: Setup & Query -->
+      <div id="subtab-rag-setup" class="sub-tab-panel active">
+        <div class="glass-card full-width">
           <div class="form-group">
             <label style="display: flex; justify-content: space-between; align-items: center;">
-              <span>指定研讀參考文件 (請勾選與目標公司相符之文件)</span>
-              <span id="selected-count-badge" class="slider-value" style="font-size: 0.8rem;">已選擇 0 個檔案</span>
+              <span style="font-size: 0.95rem; font-weight: 700;">📂 指定研讀參考文件 (請勾選與目標公司相符之文件)</span>
+              <span id="selected-count-badge" class="slider-value" style="font-size: 0.82rem;">已選擇 0 個檔案</span>
             </label>
-            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
               <button type="button" class="btn-sm" onclick="autoSelectTargetDocs(activeTargetTicker)">
                 <i class="ph-duotone ph-check-square-offset"></i> 自動勾選此公司檔案
               </button>
@@ -134,9 +145,10 @@
                 <i class="ph-duotone ph-arrows-clockwise"></i> 重新整理
               </button>
             </div>
+
             <!-- Search & Type Filters Bar -->
-            <div style="display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
-              <input type="text" id="doc-search-input" class="form-control" style="flex: 1; min-width: 220px; padding: 6px 12px; font-size: 0.85rem;" placeholder="搜尋檔名 (如 GOOG, NVDA, PDF)..." oninput="filterDocList()">
+            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+              <input type="text" id="doc-search-input" class="form-control" style="flex: 1; min-width: 240px; padding: 7px 12px; font-size: 0.88rem;" placeholder="搜尋檔名 (如 GOOG, NVDA, PDF)..." oninput="filterDocList()">
               <div style="display: flex; gap: 4px; align-items: center;">
                 <button type="button" class="btn-sm badge-btn active" onclick="setDocCategoryFilter('ALL', this)">全部</button>
                 <button type="button" class="btn-sm badge-btn" onclick="setDocCategoryFilter('PDF', this)">
@@ -150,42 +162,52 @@
                 </button>
               </div>
             </div>
-            <div id="doc-selector-container" style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 12px; max-height: 180px; overflow-y: auto;">
+            <div id="doc-selector-container" style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 14px; max-height: 220px; overflow-y: auto;">
               載入檔案清單中...
             </div>
           </div>
 
           <!-- Fixed 3-Factor Forecast Research Card -->
-          <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); padding: 14px; border-radius: var(--radius-md); margin-bottom: 18px;">
-            <div style="font-weight: 700; font-size: 0.95rem; color: #D96B82; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+          <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); padding: 18px; border-radius: var(--radius-md); margin-bottom: 22px;">
+            <div style="font-weight: 700; font-size: 1rem; color: #D96B82; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
               <span><i class="ph-duotone ph-sparkle"></i> 法人級三大前瞻因子自動研讀 (1.營收 2.成本 3.費用)</span>
-              <span style="font-size: 0.8rem; font-weight: 600; color: #82776E;">(含目標公司一致性防呆檢核)</span>
+              <span style="font-size: 0.8rem; font-weight: 600; color: #82776E;">(嚴格根據勾選之文件進行檢核與研讀)</span>
             </div>
-            <div style="font-size: 0.85rem; color: #4A4036; margin: 8px 0 12px 0;">
-              點擊後 AI 將先檢核選取之文件是否與目標公司吻合，並嚴格根據文件回答三大核心問題：<strong>(1) 預測未來營收及業務細項年增率 (2) 預測未來營業成本與毛利率影響 (3) 預測未來營業費用率</strong>。
+            <div style="font-size: 0.88rem; color: #4A4036; margin: 10px 0 14px 0; line-height: 1.6;">
+              點擊後 AI 將嚴格檢核文件一致性，並回答三大核心前瞻問題：<strong>(1) 預測未來營收及各業務細項年增率 (2) 預測未來營業成本與毛利率變化 (3) 預測未來營業費用率</strong>。
             </div>
-            <button type="button" class="btn-primary" style="background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%); font-weight: 700; font-size: 0.95rem;" onclick="runAiThreeFactorResearch()">
-              <i class="ph-duotone ph-sparkle"></i> 執行前瞻三大因子深度研讀 (含一致性檢核)
+            <button type="button" class="btn-primary" style="background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%); font-weight: 700; font-size: 1rem; padding: 12px 24px;" onclick="runAiThreeFactorResearch()">
+              <i class="ph-duotone ph-sparkle"></i> 執行前瞻三大因子深度研讀 (含一致性檢核) ➔
             </button>
           </div>
 
-          <div class="form-group">
-            <label>或自由輸入自訂投資分析問題：</label>
-            <textarea id="rag-query" class="form-control" rows="3">請詳細總結該公司最新財報的營收細拆、雲端/AI 成長率、營業利益與未來展望重點。</textarea>
+          <div class="form-group" style="margin-bottom: 12px;">
+            <label style="font-size: 0.95rem; font-weight: 700;">或自由輸入自訂投資分析問題：</label>
+            <div style="display: flex; gap: 10px;">
+              <input type="text" id="rag-query" class="form-control" value="請詳細總結該公司最新財報的營收細拆、雲端/AI 成長率、營業利益與未來展望重點。" style="flex: 1;">
+              <button class="btn-primary" style="width: auto; padding: 10px 20px; white-space: nowrap;" onclick="executeAsk()">
+                <i class="ph-duotone ph-paper-plane-tilt"></i> 提問 Gemini AI
+              </button>
+            </div>
           </div>
-          <button class="btn-primary" onclick="executeAsk()">
-            <i class="ph-duotone ph-paper-plane-tilt"></i> 傳送自訂問題給 Gemini AI
-          </button>
         </div>
+      </div>
 
-        <div class="glass-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
-            <h3 class="card-title" style="margin-bottom: 0;">
-              <i class="ph-duotone ph-article" style="color: #D96B82;"></i> AI 分析研讀報告
-            </h3>
-            <div id="ai-answer-toolbar" style="display: none; gap: 6px; align-items: center; flex-wrap: wrap;">
+      <!-- Sub-Tab 2-B: Full-Width Report View -->
+      <div id="subtab-rag-report" class="sub-tab-panel">
+        <div class="glass-card full-width">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" class="btn-sm" style="background: #FAF8F5;" onclick="switchRagSubTab('subtab-rag-setup')">
+                <i class="ph-duotone ph-arrow-left"></i> 返回文件選取與提問
+              </button>
+              <h3 class="card-title" style="margin-bottom: 0; margin-left: 8px;">
+                <i class="ph-duotone ph-article" style="color: #D96B82;"></i> AI 深度研讀分析報告
+              </h3>
+            </div>
+            <div id="ai-answer-toolbar" style="display: none; gap: 8px; align-items: center; flex-wrap: wrap;">
               <button type="button" id="btn-apply-forecast-to-tab3" class="btn-sm" style="background: #FFF0F3; border: 1.5px solid #D96B82; color: #D96B82; font-weight: 700; display: none;" onclick="applyAiForecastToTab3()">
-                <i class="ph-duotone ph-lightning"></i> 一鍵帶入第 3 步生成 Pro-Forma 損益表
+                <i class="ph-duotone ph-lightning"></i> 一鍵套用至前瞻預測 (Auto-Fill & Run Pro-Forma)
               </button>
               <button type="button" class="btn-sm" onclick="downloadAnswerMarkdown()">
                 <i class="ph-duotone ph-download-simple"></i> 下載 .md 報告
@@ -198,14 +220,14 @@
               </button>
             </div>
           </div>
-          <div id="rag-output" class="output-box" style="white-space: normal; line-height: 1.6; min-height: 480px;">
-            尚未執行研讀。請在左側勾選目標公司的財報/年報文件後，點擊「執行前瞻三大因子深度研讀」。
+          <div id="rag-output" class="output-box" style="white-space: normal; line-height: 1.7; min-height: 520px; font-size: 0.94rem;">
+            尚未執行研讀。請切換至「1. 參考文件選取與研讀設定」勾選目標公司財報後點擊研讀按鈕。
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Tab 3: Pro-Forma Forecasting -->
+    <!-- Tab 3: Pro-Forma Forecasting (Full-Width Sub-Tab Layout) -->
     <div id="tab-forecast" class="tab-panel">
       <!-- Active Target Banner in Tab 3 -->
       <div style="background: #FFF; border: 1.5px solid var(--card-border); border-radius: var(--radius-md); padding: 12px 18px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
@@ -223,11 +245,22 @@
         </div>
       </div>
 
-      <div class="card-grid">
-        <div class="glass-card">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+      <!-- Sub-Navigation for Tab 3 -->
+      <div class="sub-nav-tabs">
+        <button class="sub-tab-btn active" id="btn-subtab-fc-input" onclick="switchForecastSubTab('subtab-fc-input')">
+          <i class="ph-duotone ph-sliders"></i> 1. 參數與三大因子細拆工作台 (Workbench)
+        </button>
+        <button class="sub-tab-btn" id="btn-subtab-fc-output" onclick="switchForecastSubTab('subtab-fc-output')">
+          <i class="ph-duotone ph-presentation-chart"></i> 2. 完整 3 年損益表、預估 EPS 與估值成果 (Results)
+        </button>
+      </div>
+
+      <!-- Sub-Tab 3-A: Inputs & Breakdown Tables (Full Width) -->
+      <div id="subtab-fc-input" class="sub-tab-panel active">
+        <div class="glass-card full-width">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; flex-wrap: wrap; gap: 8px;">
             <h3 class="card-title" style="margin-bottom: 0;">
-              <i class="ph-duotone ph-chart-polar" style="color: #D96B82;"></i> Pro-Forma 三大因子推估工作台
+              <i class="ph-duotone ph-chart-polar" style="color: #D96B82;"></i> Pro-Forma 前瞻假設與細拆工作台
             </h3>
             <button type="button" class="btn-sm" style="background: #FFF0F3; border: 1px solid #D96B82; color: #D96B82; font-weight: 700;" onclick="getAiForecastRecommendation()">
               <i class="ph-duotone ph-sparkle"></i> AI 重新研讀推薦參數
@@ -235,12 +268,12 @@
           </div>
 
           <!-- Business Cycle & Risk Presets Toolbar -->
-          <div style="background: #FAF8F5; border: 1px solid var(--card-border); border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
-            <div style="font-size: 0.86rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
+          <div style="background: #FAF8F5; border: 1px solid var(--card-border); border-radius: 8px; padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="font-size: 0.9rem; font-weight: 700; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
               <i class="ph-duotone ph-globe-hemisphere-west" style="color: #82776E;"></i>
               <span>景氣循環情境模式：</span>
             </div>
-            <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
               <button type="button" class="btn-sm" id="btn-cycle-expansion" style="font-weight: 600;" onclick="applyCyclePreset('EXPANSION', this)">
                 <i class="ph-duotone ph-trend-up"></i> 穩健擴張模式
               </button>
@@ -256,10 +289,10 @@
             </div>
           </div>
 
-          <!-- Basic Company Inputs -->
-          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px;">
+          <!-- Basic Company Inputs in One Responsive Row -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 22px;">
             <div class="form-group" style="margin-bottom: 0;">
-              <label>股票代號</label>
+              <label>股票代號 (Ticker)</label>
               <input type="text" id="fc-ticker" class="form-control" value="GOOG" onchange="loadTickerFinancialHistory()">
             </div>
             <div class="form-group" style="margin-bottom: 0;">
@@ -284,13 +317,13 @@
             </div>
           </div>
 
-          <!-- Dynamic Breakdown Table 1: Revenue Segments -->
-          <div style="margin-bottom: 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <h4 style="margin: 0; font-size: 0.95rem; color: #D96B82;">
+          <!-- Dynamic Breakdown Table 1: Revenue Segments (Full Width) -->
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; font-size: 1rem; color: #D96B82; display: flex; align-items: center; gap: 6px;">
                 <i class="ph-duotone ph-chart-bar"></i> 1. 營業收入業務細拆 (Revenue Breakdown)
               </h4>
-              <div style="display: flex; gap: 6px;">
+              <div style="display: flex; gap: 8px;">
                 <button type="button" class="btn-sm" onclick="normalizeRevenueShares()">
                   <i class="ph-duotone ph-calculator"></i> 依金額重算比重
                 </button>
@@ -299,101 +332,101 @@
                 </button>
               </div>
             </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden;">
               <thead>
                 <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--card-border);">
-                  <th style="padding: 6px 8px; text-align: left;">業務線名稱</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 105px;">基期營收 ($M)</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 65px;">佔比</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 90px;">Y1 成長率 %</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 95px;">Y1 預估營收</th>
-                  <th style="padding: 6px 8px; text-align: center; width: 60px;">操作</th>
+                  <th style="padding: 8px 12px; text-align: left;">業務線名稱</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 180px;">基期營收 ($M)</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 120px;">佔比 (%)</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 140px;">Y1 成長率 (%)</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 180px;">Y1 預估營收 ($M)</th>
+                  <th style="padding: 8px 12px; text-align: center; width: 100px;">操作</th>
                 </tr>
               </thead>
               <tbody id="tbody-revenue-segments"></tbody>
               <tfoot>
                 <tr style="background: #FFF5F7; font-weight: 700; border-top: 1.5px solid var(--card-border);">
-                  <td style="padding: 6px 8px;">總營業收入 (Total Revenue)</td>
-                  <td style="padding: 6px 8px;" id="tot-rev-base">$0.00</td>
-                  <td style="padding: 6px 8px;" id="tot-rev-share">100.0%</td>
-                  <td style="padding: 6px 8px; color: #D96B82;" id="tot-rev-growth">+0.0%</td>
-                  <td style="padding: 6px 8px; color: #D96B82;" id="tot-rev-y1">$0.00</td>
+                  <td style="padding: 10px 12px;">總營業收入 (Total Revenue)</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-rev-base">$0.00</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-rev-share">100.0%</td>
+                  <td style="padding: 10px 12px; text-align: right; color: #D96B82;" id="tot-rev-growth">+0.0%</td>
+                  <td style="padding: 10px 12px; text-align: right; color: #D96B82;" id="tot-rev-y1">$0.00</td>
                   <td></td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
-          <!-- Dynamic Breakdown Table 2: COGS Segments -->
-          <div style="margin-bottom: 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-main);">
+          <!-- Dynamic Breakdown Table 2: COGS Segments (Full Width) -->
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
                 <i class="ph-duotone ph-package"></i> 2. 營業成本細拆 (COGS Breakdown)
               </h4>
               <button type="button" class="btn-sm" onclick="addCogsSegmentRow()">
                 <i class="ph-duotone ph-plus-circle"></i> 新增成本項目
               </button>
             </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden;">
               <thead>
                 <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--card-border);">
-                  <th style="padding: 6px 8px; text-align: left;">成本項目名稱</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 105px;">基期金額 ($M)</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 65px;">營收比重</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 90px;">Y1 成長率 %</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 95px;">Y1 預估成本</th>
-                  <th style="padding: 6px 8px; text-align: center; width: 60px;">操作</th>
+                  <th style="padding: 8px 12px; text-align: left;">成本項目名稱</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 180px;">基期金額 ($M)</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 120px;">營收比重 (%)</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 140px;">Y1 成長率 (%)</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 180px;">Y1 預估成本 ($M)</th>
+                  <th style="padding: 8px 12px; text-align: center; width: 100px;">操作</th>
                 </tr>
               </thead>
               <tbody id="tbody-cogs-segments"></tbody>
               <tfoot>
                 <tr style="background: var(--bg-secondary); font-weight: 700; border-top: 1.5px solid var(--card-border);">
-                  <td style="padding: 6px 8px;">總營業成本 (Total COGS)</td>
-                  <td style="padding: 6px 8px;" id="tot-cogs-base">$0.00</td>
-                  <td style="padding: 6px 8px;" id="tot-cogs-share">0.0%</td>
-                  <td style="padding: 6px 8px;" id="tot-cogs-growth">+0.0%</td>
-                  <td style="padding: 6px 8px;" id="tot-cogs-y1">$0.00</td>
+                  <td style="padding: 10px 12px;">總營業成本 (Total COGS)</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-cogs-base">$0.00</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-cogs-share">0.0%</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-cogs-growth">+0.0%</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-cogs-y1">$0.00</td>
                   <td></td>
                 </tr>
                 <tr style="background: #F0FFF4; font-weight: 700; color: #2E7D32; border-top: 1px dashed var(--card-border);">
-                  <td style="padding: 6px 8px;">營業毛利 (Gross Profit)</td>
-                  <td style="padding: 6px 8px;" id="tot-gp-base">$0.00</td>
-                  <td style="padding: 6px 8px;" id="disp-gross-margin">0.0% (毛利率)</td>
-                  <td style="padding: 6px 8px;" id="tot-gp-growth">+0.0%</td>
-                  <td style="padding: 6px 8px;" id="tot-gp-y1">$0.00</td>
+                  <td style="padding: 10px 12px;">營業毛利 (Gross Profit)</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-gp-base">$0.00</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="disp-gross-margin">0.0% (毛利率)</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-gp-growth">+0.0%</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-gp-y1">$0.00</td>
                   <td></td>
                 </tr>
               </tfoot>
             </table>
           </div>
 
-          <!-- Dynamic Breakdown Table 3: OpEx Segments -->
-          <div style="margin-bottom: 18px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-              <h4 style="margin: 0; font-size: 0.95rem; color: var(--text-main);">
+          <!-- Dynamic Breakdown Table 3: OpEx Segments (Full Width) -->
+          <div style="margin-bottom: 24px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h4 style="margin: 0; font-size: 1rem; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
                 <i class="ph-duotone ph-briefcase"></i> 3. 營業費用細拆 (Operating Expenses Breakdown)
               </h4>
               <button type="button" class="btn-sm" onclick="addOpexSegmentRow()">
                 <i class="ph-duotone ph-plus-circle"></i> 新增費用項目
               </button>
             </div>
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 6px; overflow: hidden;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; background: #FFF; border: 1px solid var(--card-border); border-radius: 8px; overflow: hidden;">
               <thead>
                 <tr style="background: var(--bg-secondary); border-bottom: 1px solid var(--card-border);">
-                  <th style="padding: 6px 8px; text-align: left;">費用項目名稱</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 105px;">基期金額 ($M)</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 75px;">費用率 %</th>
-                  <th style="padding: 6px 8px; text-align: left; width: 100px;">Y1 預估費用</th>
-                  <th style="padding: 6px 8px; text-align: center; width: 60px;">操作</th>
+                  <th style="padding: 8px 12px; text-align: left;">費用項目名稱</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 180px;">基期金額 ($M)</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 140px;">費用率 (%)</th>
+                  <th style="padding: 8px 12px; text-align: right; width: 180px;">Y1 預估費用 ($M)</th>
+                  <th style="padding: 8px 12px; text-align: center; width: 100px;">操作</th>
                 </tr>
               </thead>
               <tbody id="tbody-opex-segments"></tbody>
               <tfoot>
                 <tr style="background: var(--bg-secondary); font-weight: 700; border-top: 1.5px solid var(--card-border);">
-                  <td style="padding: 6px 8px;">總營業費用 (Total OpEx)</td>
-                  <td style="padding: 6px 8px;" id="tot-opex-base">$0.00</td>
-                  <td style="padding: 6px 8px;" id="tot-opex-ratio">0.0%</td>
-                  <td style="padding: 6px 8px;" id="tot-opex-y1">$0.00</td>
+                  <td style="padding: 10px 12px;">總營業費用 (Total OpEx)</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-opex-base">$0.00</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-opex-ratio">0.0%</td>
+                  <td style="padding: 10px 12px; text-align: right;" id="tot-opex-y1">$0.00</td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -401,75 +434,94 @@
           </div>
 
           <!-- Natural Language Steer AI Prompt -->
-          <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 12px; margin-bottom: 16px;">
-            <label style="font-size: 0.88rem; font-weight: 600;">
+          <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 16px; margin-bottom: 22px;">
+            <label style="font-size: 0.9rem; font-weight: 600;">
               <i class="ph-duotone ph-magic-wand" style="color: #D96B82;"></i> 自然語言 AI 智慧微調 (可輸入增刪業務線或調整成長率)：
             </label>
-            <div style="display: flex; gap: 8px; margin-top: 6px;">
-              <input type="text" id="fc-ai-steer-prompt" class="form-control" placeholder="例如：將 YouTube 廣告成長調高至 20%，並新增 AI 代理人業務線" style="font-size: 0.85rem;">
-              <button type="button" class="btn-sm" style="white-space: nowrap; background: #D96B82; color: #FFF; font-weight: 600;" onclick="steerForecastModelWithAi()">
+            <div style="display: flex; gap: 10px; margin-top: 8px;">
+              <input type="text" id="fc-ai-steer-prompt" class="form-control" placeholder="例如：將 YouTube 廣告成長調高至 20%，並新增 AI 代理人業務線" style="font-size: 0.88rem;">
+              <button type="button" class="btn-sm" style="white-space: nowrap; background: #D96B82; color: #FFF; font-weight: 600; padding: 8px 18px;" onclick="steerForecastModelWithAi()">
                 <i class="ph-duotone ph-sparkle"></i> AI 微調
               </button>
             </div>
-            <div id="ai-steer-feedback" style="display: none; font-size: 0.82rem; color: #D96B82; margin-top: 6px;"></div>
+            <div id="ai-steer-feedback" style="display: none; font-size: 0.85rem; color: #D96B82; margin-top: 8px;"></div>
           </div>
 
-          <button class="btn-primary" style="font-size: 1rem; font-weight: 700;" onclick="executeForecast()">
-            <i class="ph-duotone ph-play-circle"></i> 執行 3 年 Pro-Forma 損益表與估值推算
-          </button>
+          <div style="text-align: center; margin-top: 10px;">
+            <button class="btn-primary" style="font-size: 1.05rem; font-weight: 700; padding: 14px 36px; max-width: 480px; margin: 0 auto;" onclick="executeForecast()">
+              <i class="ph-duotone ph-play-circle"></i> ⚡ 執行 3 年 Pro-Forma 損益表與估值推算 ➔
+            </button>
+          </div>
         </div>
+      </div>
 
-        <div class="glass-card">
-          <h3 class="card-title">
-            <i class="ph-duotone ph-presentation-chart" style="color: #D96B82;"></i> 損益表推算、EPS 預估與估值結果
-          </h3>
-          <div id="forecast-output" class="output-box" style="white-space: normal;">
-            尚未執行預測。請於左側設定細拆參數後，點擊下方「執行 3 年 Pro-Forma 損益表與估值推算」。
+      <!-- Sub-Tab 3-B: Output Results (Full Width) -->
+      <div id="subtab-fc-output" class="sub-tab-panel">
+        <div class="glass-card full-width">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 10px; border-bottom: 1px solid var(--card-border); padding-bottom: 14px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button type="button" class="btn-sm" style="background: #FAF8F5;" onclick="switchForecastSubTab('subtab-fc-input')">
+                <i class="ph-duotone ph-arrow-left"></i> ⬅️ 返回調整細拆參數
+              </button>
+              <h3 class="card-title" style="margin-bottom: 0; margin-left: 8px;">
+                <i class="ph-duotone ph-presentation-chart" style="color: #D96B82;"></i> 完整 3 年 Pro-Forma 損益表與估值成果看板
+              </h3>
+            </div>
+            <button type="button" class="btn-primary" style="width: auto; padding: 8px 18px; font-size: 0.88rem;" onclick="executeForecast()">
+              <i class="ph-duotone ph-arrows-clockwise"></i> 重新計算最新結果
+            </button>
+          </div>
+
+          <div id="forecast-output" class="output-box" style="white-space: normal; min-height: 480px; padding: 20px;">
+            尚未執行預測。請於「1. 參數與三大因子細拆工作台」設定參數後，點擊「執行 3 年 Pro-Forma 損益表與估值推算」。
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Tab 4: Reviewing -->
+    <!-- Tab 4: Reviewing (Full Width) -->
     <div id="tab-review" class="tab-panel">
-      <div class="card-grid">
-        <div class="glass-card">
-          <h3 class="card-title">
-            <i class="ph-duotone ph-scales" style="color: #D96B82;"></i> 財報開獎復盤與歸因診斷
-          </h3>
-          <div class="form-group">
+      <div class="glass-card full-width">
+        <h3 class="card-title">
+          <i class="ph-duotone ph-scales" style="color: #D96B82;"></i> 財報開獎復盤與偏差歸因診斷
+        </h3>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) auto; gap: 14px; align-items: end; margin-bottom: 20px;">
+          <div class="form-group" style="margin-bottom: 0;">
             <label>股票代號 (Ticker)</label>
             <input type="text" id="rv-ticker" class="form-control" value="GOOG">
           </div>
-          <div class="form-group">
+          <div class="form-group" style="margin-bottom: 0;">
             <label>真實開獎總營收 ($M)</label>
             <input type="number" id="rv-actual-rev" class="form-control" value="415000.0">
           </div>
-          <div class="form-group">
+          <div class="form-group" style="margin-bottom: 0;">
             <label>真實營業利潤 ($M)</label>
             <input type="number" id="rv-actual-op" class="form-control" value="132000.0">
           </div>
-          <div class="form-group">
+          <div class="form-group" style="margin-bottom: 0;">
             <label>真實毛利率 (%)</label>
             <input type="number" id="rv-actual-gm" class="form-control" value="58.5" step="0.1">
           </div>
-          <button class="btn-primary" onclick="executeReview()">
-            <i class="ph-duotone ph-scales"></i> 執行復盤診斷與偏差歸因
+          <button class="btn-primary" style="width: auto; padding: 10px 24px;" onclick="executeReview()">
+            <i class="ph-duotone ph-scales"></i> 執行復盤歸因
           </button>
         </div>
 
-        <div class="glass-card">
-          <h3 class="card-title">
+        <div style="margin-top: 18px; border-top: 1px solid var(--card-border); padding-top: 18px;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin-bottom: 10px; color: var(--text-main); display: flex; align-items: center; gap: 6px;">
             <i class="ph-duotone ph-clipboard-text" style="color: #D96B82;"></i> 復盤報告與經驗迭代
-          </h3>
-          <div id="review-output" class="output-box" style="white-space: normal;">尚未執行復盤。輸入開獎數據後點擊左側按鈕。</div>
+          </h4>
+          <div id="review-output" class="output-box" style="white-space: normal; min-height: 280px;">
+            尚未執行復盤。輸入開獎數據後點擊上方按鈕。
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- Tab 5: Reports -->
+    <!-- Tab 5: Reports (Full Width) -->
     <div id="tab-reports" class="tab-panel">
-      <div class="glass-card">
+      <div class="glass-card full-width">
         <h3 class="card-title">
           <i class="ph-duotone ph-folder-open" style="color: #D96B82;"></i> 本地報告與 NotebookLM 雲端資料庫
         </h3>
@@ -479,6 +531,6 @@
 
   </div>
 
-  <script src="/static/js/app.js?v=5.2.0"></script>
+  <script src="/static/js/app.js?v=5.3.0"></script>
 </body>
 </html>

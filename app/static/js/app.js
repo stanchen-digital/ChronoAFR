@@ -1,4 +1,4 @@
-// Frontend Application Logic for ChronoAFR (v5.1.0 Institutional Multi-Module Target Governance Pipeline)
+// Frontend Application Logic for ChronoAFR (v5.3.0 Full-Width Sub-Tab Layout Engine)
 
 // Global State
 let activeTargetTicker = "GOOG"; // Default active locked target ticker
@@ -54,6 +54,7 @@ function setActiveTargetTicker(ticker) {
   }
 }
 
+// Master Tab Navigation
 function switchTab(tabId) {
   const targetPanel = document.getElementById(tabId);
   if (!targetPanel) return;
@@ -82,6 +83,36 @@ function switchTab(tabId) {
   }
 }
 
+// Sub-Tab Navigation for Tab 2 (RAG Chat)
+function switchRagSubTab(subTabId) {
+  document.querySelectorAll('#tab-rag .sub-tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#tab-rag .sub-tab-btn').forEach(b => b.classList.remove('active'));
+
+  const targetPanel = document.getElementById(subTabId);
+  if (targetPanel) targetPanel.classList.add('active');
+
+  if (subTabId === 'subtab-rag-setup') {
+    document.getElementById('btn-subtab-rag-setup')?.classList.add('active');
+  } else if (subTabId === 'subtab-rag-report') {
+    document.getElementById('btn-subtab-rag-report')?.classList.add('active');
+  }
+}
+
+// Sub-Tab Navigation for Tab 3 (Forecasting)
+function switchForecastSubTab(subTabId) {
+  document.querySelectorAll('#tab-forecast .sub-tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('#tab-forecast .sub-tab-btn').forEach(b => b.classList.remove('active'));
+
+  const targetPanel = document.getElementById(subTabId);
+  if (targetPanel) targetPanel.classList.add('active');
+
+  if (subTabId === 'subtab-fc-input') {
+    document.getElementById('btn-subtab-fc-input')?.classList.add('active');
+  } else if (subTabId === 'subtab-fc-output') {
+    document.getElementById('btn-subtab-fc-output')?.classList.add('active');
+  }
+}
+
 // Safe Number Formatter
 function fmtNum(val, digits = 1) {
   if (typeof val !== 'number' || isNaN(val)) return '0.0';
@@ -92,12 +123,12 @@ function fmtNum(val, digits = 1) {
 function formatMarkdownText(md) {
   if (!md) return '';
   let html = md
-    .replace(/^### (.*$)/gim, '<h4 style="margin: 14px 0 6px 0; color: #D96B82; font-size: 1.05rem;">$1</h4>')
-    .replace(/^## (.*$)/gim, '<h3 style="margin: 16px 0 8px 0; color: #4A4036; font-size: 1.15rem;">$1</h3>')
-    .replace(/^# (.*$)/gim, '<h2 style="margin: 18px 0 10px 0; color: #4A4036; font-size: 1.25rem;">$1</h2>')
+    .replace(/^### (.*$)/gim, '<h4 style="margin: 18px 0 8px 0; color: #D96B82; font-size: 1.12rem;">$1</h4>')
+    .replace(/^## (.*$)/gim, '<h3 style="margin: 20px 0 10px 0; color: #4A4036; font-size: 1.25rem;">$1</h3>')
+    .replace(/^# (.*$)/gim, '<h2 style="margin: 24px 0 12px 0; color: #4A4036; font-size: 1.35rem;">$1</h2>')
     .replace(/\*\*(.*?)\*\*/gim, '<strong style="color: #4A4036;">$1</strong>')
     .replace(/\*(.*?)\*/gim, '<em>$1</em>')
-    .replace(/\n\n/g, '<div style="margin-bottom: 12px;"></div>')
+    .replace(/\n\n/g, '<div style="margin-bottom: 14px;"></div>')
     .replace(/\n/g, '<br>');
   return html;
 }
@@ -147,7 +178,7 @@ async function executeFetch() {
             確認後系統將全域鎖定研究主體為 <strong>${ticker}</strong>，並自動為您切換至 <strong>Step 2. AI 財報問答</strong> 同步精準勾選該公司文件。
           </div>
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button type="button" class="btn-primary" style="width: auto; padding: 8px 18px; font-size: 0.92rem; font-weight: 700; background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%);" onclick="confirmTargetAndProceedToTab2('${ticker}')">
+            <button type="button" class="btn-primary" style="width: auto; padding: 8px 20px; font-size: 0.92rem; font-weight: 700; background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%);" onclick="confirmTargetAndProceedToTab2('${ticker}')">
               <i class="ph-duotone ph-check"></i> 確認以此公司進行分析，進入第 2 步 (AI 財報問答)
             </button>
             <button type="button" class="btn-sm" style="background: #FFF; border: 1px solid var(--card-border);" onclick="document.getElementById('fetch-ticker').focus()">
@@ -170,6 +201,7 @@ async function executeFetch() {
 function confirmTargetAndProceedToTab2(ticker) {
   setActiveTargetTicker(ticker);
   switchTab('tab-rag');
+  switchRagSubTab('subtab-rag-setup');
   autoSelectTargetDocs(ticker);
   loadTickerFinancialHistory(); // Pre-load target financial data into Tab 3 state
 }
@@ -210,7 +242,7 @@ async function loadAvailableDocuments() {
       const shouldCheck = isTarget || isMacro;
 
       html += `
-        <label class="doc-item" data-type="${doc.file_type}" style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; padding: 5px 0; cursor: pointer; border-bottom: 1px dashed rgba(0,0,0,0.05);">
+        <label class="doc-item" data-type="${doc.file_type}" style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; padding: 6px 4px; cursor: pointer; border-bottom: 1px dashed rgba(203, 177, 147, 0.2);">
           <input type="checkbox" class="doc-chk" value="${doc.filename}" onchange="updateSelectedCountBadge()" ${shouldCheck ? 'checked' : ''}>
           <span style="font-size: 0.72rem; font-weight: 700; padding: 2px 6px; border-radius: 4px; background: rgba(0,0,0,0.05); color: ${badgeColor};">${doc.file_type}</span>
           <span style="word-break: break-all;">${doc.display_label}</span>
@@ -311,11 +343,9 @@ function checkDocumentConsistency(selectedDocs, targetTicker) {
   return { consistent: true };
 }
 
-function showMismatchAlert(mismatchInfo, onConfirmAction) {
+function showMismatchAlert(mismatchInfo) {
   const container = document.getElementById('mismatch-alert-container');
   if (!container) return;
-
-  const targetName = getCompanyDisplayName(activeTargetTicker);
 
   container.innerHTML = `
     <div style="background: #FFF8E7; border: 1.5px solid #F59E0B; border-radius: 8px; padding: 16px; color: #78350F; box-shadow: 0 4px 12px rgba(245, 158, 11, 0.15);">
@@ -413,7 +443,7 @@ function selectGDriveDocsOnly() {
 }
 
 // -----------------------------------------------------------------------------
-// Tab 2: Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.1.0)
+// Tab 2: Core Three-Factor Forecast Research & Pipeline Bridging Engine (v5.3.0)
 // -----------------------------------------------------------------------------
 
 async function runAiThreeFactorResearch() {
@@ -437,10 +467,13 @@ async function runAiThreeFactorResearch() {
     if (mismatchBox) mismatchBox.style.display = 'none';
   }
 
+  // Auto-switch to report sub-tab to show progress
+  switchRagSubTab('subtab-rag-report');
+
   if (outBox) {
     outBox.innerHTML = `
-      <div style="font-size: 0.95rem; color: #82776E; padding: 16px;">
-        🤖 <strong>Gemini AI 正在深入研讀 【${ticker} (${getCompanyDisplayName(ticker)})】 被選取的 ${selectedDocs.length} 份文件...</strong><br><br>
+      <div style="font-size: 1rem; color: #82776E; padding: 24px; line-height: 1.8;">
+        <i class="ph-duotone ph-sparkle" style="font-size: 1.4rem; color: #D96B82;"></i> <strong>Gemini AI 正在深入研讀 【${ticker} (${getCompanyDisplayName(ticker)})】 被選取的 ${selectedDocs.length} 份文件...</strong><br><br>
         • 正在進行【目標公司一致性與資料充分性檢核】...<br>
         • 正在計算【(1) 未來營收與業務細項年增率】...<br>
         • 正在推估【(2) 未來營業成本結構與毛利率變化】...<br>
@@ -463,12 +496,12 @@ async function runAiThreeFactorResearch() {
     if (data.status === 'insufficient_data') {
       if (outBox) {
         outBox.innerHTML = `
-          <div style="background: #FFF0F3; border: 1.5px solid #EF4444; border-radius: 8px; padding: 16px;">
-            <h4 style="margin: 0 0 8px 0; font-size: 1.05rem; color: #EF4444;">⚠️ 資料不足警示 (Insufficient Data)</h4>
-            <p style="margin: 0 0 10px 0; font-size: 0.9rem; color: #4A4036;">
+          <div style="background: #FFF0F3; border: 1.5px solid #EF4444; border-radius: 8px; padding: 20px;">
+            <h4 style="margin: 0 0 8px 0; font-size: 1.1rem; color: #EF4444;">⚠️ 資料不足警示 (Insufficient Data)</h4>
+            <p style="margin: 0 0 10px 0; font-size: 0.92rem; color: #4A4036;">
               ${data.message || data.insufficiency_reason || '目前勾選的資料缺乏足夠之財務細拆數據，無法做出可靠的前瞻預測推論。'}
             </p>
-            <div style="font-size: 0.85rem; color: #82776E;">
+            <div style="font-size: 0.88rem; color: #82776E;">
               建議勾選包含營收細拆、營業費用與損益表明細的完整 10-K 年報或官方季報後再次執行。
             </div>
           </div>
@@ -486,21 +519,25 @@ async function runAiThreeFactorResearch() {
     const formattedBriefHtml = formatMarkdownText(latestAiAnswer);
 
     let html = `
-      <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: 8px; padding: 18px; line-height: 1.65; font-size: 0.92rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; border-bottom: 1.5px solid var(--card-border); padding-bottom: 10px;">
-          <span style="font-size: 1.05rem; font-weight: 700; color: #D96B82;">📊 ${data.ticker || ticker} (${getCompanyDisplayName(data.ticker || ticker)}) 前瞻三大因子深度研讀報告</span>
-          <span style="font-size: 0.8rem; background: #E8F5E9; color: #2E7D32; font-weight: 700; padding: 4px 10px; border-radius: 6px;">✅ 資料充足 (Data Sufficient)</span>
+      <div style="background: #FDFBF9; border: 1px solid var(--card-border); border-radius: 12px; padding: 24px; line-height: 1.75; font-size: 0.95rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; border-bottom: 1.5px solid var(--card-border); padding-bottom: 14px;">
+          <span style="font-size: 1.15rem; font-weight: 700; color: #D96B82;">
+            <i class="ph-duotone ph-presentation-chart"></i> ${data.ticker || ticker} (${getCompanyDisplayName(data.ticker || ticker)}) 前瞻三大因子深度研讀報告
+          </span>
+          <span style="font-size: 0.85rem; background: #E8F5E9; color: #2E7D32; font-weight: 700; padding: 4px 12px; border-radius: 6px;">
+            <i class="ph-duotone ph-check-circle"></i> 資料充足 (Data Sufficient)
+          </span>
         </div>
-        <div style="color: var(--text-main); margin-bottom: 20px; font-size: 0.93rem;">
+        <div style="color: var(--text-main); margin-bottom: 24px;">
           ${formattedBriefHtml}
         </div>
-        <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="background: #FFF5F7; border: 1.5px solid var(--primary-pink); border-radius: 10px; padding: 18px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
           <div>
-            <div style="font-weight: 700; color: #D96B82; font-size: 0.95rem;">💡 審閱確認：若您認可 AI 對 ${data.ticker || ticker} 的前瞻推論與年增率</div>
-            <div style="font-size: 0.83rem; color: #82776E;">點擊右側按鈕將自動注入「前瞻財務預測」工作台並生成 3 年 Pro-Forma 損益表與 EPS！</div>
+            <div style="font-weight: 700; color: #D96B82; font-size: 1rem;">💡 審閱確認：若您認可 AI 對 ${data.ticker || ticker} 的前瞻推論與年增率</div>
+            <div style="font-size: 0.86rem; color: #82776E;">點擊右側按鈕將自動注入「前瞻財務預測」工作台並生成 3 年 Pro-Forma 損益表與 EPS！</div>
           </div>
-          <button type="button" class="btn-primary" style="width: auto; padding: 10px 20px; font-weight: 700; font-size: 0.92rem; background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%);" onclick="applyAiForecastToTab3()">
-            🚀 採納此推論並一鍵套用至前瞻預測 (Auto-Fill & Run Pro-Forma)
+          <button type="button" class="btn-primary" style="width: auto; padding: 12px 24px; font-weight: 700; font-size: 0.95rem; background: linear-gradient(135deg, #FFB7C5 0%, #D96B82 100%);" onclick="applyAiForecastToTab3()">
+            <i class="ph-duotone ph-lightning"></i> 🚀 採納此推論並一鍵套用至前瞻預測 (Auto-Fill & Run Pro-Forma)
           </button>
         </div>
       </div>
@@ -552,7 +589,7 @@ function applyAiForecastToTab3() {
     opexSegments = data.opex_segments;
   }
 
-  // 3. Switch to Tab 3
+  // 3. Switch to Tab 3 and Sub-Tab Output
   switchTab('tab-forecast');
 
   // 4. Render and Recalculate
@@ -561,7 +598,7 @@ function applyAiForecastToTab3() {
   renderOpexSegmentRows();
   recalculateTotals();
 
-  // 5. Automatically Run Pro-Forma & Valuation
+  // 5. Automatically Run Pro-Forma & Valuation and Switch to Output Sub-Tab
   executeForecast();
 
   // 6. Show Notification Feedback
@@ -588,13 +625,16 @@ async function executeAsk() {
     return;
   }
 
+  // Switch to report sub-tab
+  switchRagSubTab('subtab-rag-report');
+
   const outBox = document.getElementById('rag-output');
   const toolbar = document.getElementById('ai-answer-toolbar');
   const applyBtn = document.getElementById('btn-apply-forecast-to-tab3');
 
   if (toolbar) toolbar.style.display = 'none';
   if (applyBtn) applyBtn.style.display = 'none';
-  if (outBox) outBox.innerText = `💡 正在檢索已選取的 ${selectedDocs.length} 份文件並由 Gemini AI 進行分析...`;
+  if (outBox) outBox.innerHTML = `<div style="padding: 20px; color: #82776E;"><i class="ph-duotone ph-sparkle"></i> 正在檢索已選取的 ${selectedDocs.length} 份文件並由 Gemini AI 進行深度分析...</div>`;
 
   try {
     const res = await fetch('/api/ask', {
@@ -826,7 +866,7 @@ async function scanCycleDownsideRisks() {
   }
 }
 
-// Table 1: Revenue Segments Rendering
+// Table 1: Revenue Segments Rendering (Full Width)
 function renderRevenueSegmentRows() {
   const tbody = document.getElementById('tbody-revenue-segments');
   if (!tbody) return;
@@ -839,24 +879,24 @@ function renderRevenueSegmentRows() {
 
     html += `
       <tr style="border-bottom: 1px solid var(--card-border);">
-        <td style="padding: 6px;">
-          <input type="text" class="form-control" value="${seg.name}" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateRevSegName(${idx}, this.value)">
+        <td style="padding: 8px 12px;">
+          <input type="text" class="form-control" value="${seg.name}" style="padding: 6px 10px; font-size: 0.88rem;" onchange="updateRevSegName(${idx}, this.value)">
         </td>
-        <td style="padding: 6px;">
-          <input type="number" class="form-control" value="${seg.base_amount}" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateRevSegAmount(${idx}, this.value)">
+        <td style="padding: 8px 12px; text-align: right;">
+          <input type="number" class="form-control" value="${seg.base_amount}" style="padding: 6px 10px; font-size: 0.88rem; text-align: right;" onchange="updateRevSegAmount(${idx}, this.value)">
         </td>
-        <td style="padding: 6px; font-weight: 600;" id="rev-share-${idx}">
+        <td style="padding: 8px 12px; font-weight: 600; text-align: right;" id="rev-share-${idx}">
           ${seg.share_pct ? seg.share_pct.toFixed(1) : 0.0}%
         </td>
-        <td style="padding: 6px;">
-          <input type="number" class="form-control" value="${gVal.toFixed(1)}" step="0.5" style="padding: 4px 8px; font-size: 0.85rem; ${isNeg ? 'border-color: #EF4444; color: #EF4444;' : ''}" onchange="updateRevSegGrowth(${idx}, this.value)">
+        <td style="padding: 8px 12px; text-align: right;">
+          <input type="number" class="form-control" value="${gVal.toFixed(1)}" step="0.5" style="padding: 6px 10px; font-size: 0.88rem; text-align: right; ${isNeg ? 'border-color: #EF4444; color: #EF4444;' : ''}" onchange="updateRevSegGrowth(${idx}, this.value)">
         </td>
-        <td style="padding: 6px; ${colorStyle}" id="rev-y1-${idx}">
+        <td style="padding: 8px 12px; ${colorStyle} text-align: right;" id="rev-y1-${idx}">
           $0.00
         </td>
-        <td style="padding: 6px; text-align: center; white-space: nowrap;">
-          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="addRevenueSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.15rem;"></i></button>
-          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="removeRevenueSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.15rem;"></i></button>
+        <td style="padding: 8px 12px; text-align: center; white-space: nowrap;">
+          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 6px;" onclick="addRevenueSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.25rem;"></i></button>
+          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 6px;" onclick="removeRevenueSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.25rem;"></i></button>
         </td>
       </tr>
     `;
@@ -864,7 +904,7 @@ function renderRevenueSegmentRows() {
   tbody.innerHTML = html;
 }
 
-// Table 2: COGS Segments Rendering
+// Table 2: COGS Segments Rendering (Full Width)
 function renderCogsSegmentRows() {
   const tbody = document.getElementById('tbody-cogs-segments');
   if (!tbody) return;
@@ -873,24 +913,24 @@ function renderCogsSegmentRows() {
   cogsSegments.forEach((cg, idx) => {
     html += `
       <tr style="border-bottom: 1px solid var(--card-border);">
-        <td style="padding: 6px;">
-          <input type="text" class="form-control" value="${cg.name}" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateCogsName(${idx}, this.value)">
+        <td style="padding: 8px 12px;">
+          <input type="text" class="form-control" value="${cg.name}" style="padding: 6px 10px; font-size: 0.88rem;" onchange="updateCogsName(${idx}, this.value)">
         </td>
-        <td style="padding: 6px;">
-          <input type="number" class="form-control" value="${cg.base_amount}" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateCogsAmount(${idx}, this.value)">
+        <td style="padding: 8px 12px; text-align: right;">
+          <input type="number" class="form-control" value="${cg.base_amount}" style="padding: 6px 10px; font-size: 0.88rem; text-align: right;" onchange="updateCogsAmount(${idx}, this.value)">
         </td>
-        <td style="padding: 6px; font-weight: 600;" id="cogs-share-${idx}">
+        <td style="padding: 8px 12px; font-weight: 600; text-align: right;" id="cogs-share-${idx}">
           ${cg.ratio_pct ? (cg.ratio_pct * 100).toFixed(1) : 0.0}%
         </td>
-        <td style="padding: 6px;">
-          <input type="number" class="form-control" value="${((cg.growth_y1 || 0.10) * 100).toFixed(1)}" step="0.5" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateCogsGrowth(${idx}, this.value)">
+        <td style="padding: 8px 12px; text-align: right;">
+          <input type="number" class="form-control" value="${((cg.growth_y1 || 0.10) * 100).toFixed(1)}" step="0.5" style="padding: 6px 10px; font-size: 0.88rem; text-align: right;" onchange="updateCogsGrowth(${idx}, this.value)">
         </td>
-        <td style="padding: 6px; font-weight: 700;" id="cogs-y1-${idx}">
+        <td style="padding: 8px 12px; font-weight: 700; text-align: right;" id="cogs-y1-${idx}">
           $0.00
         </td>
-        <td style="padding: 6px; text-align: center; white-space: nowrap;">
-          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="addCogsSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.15rem;"></i></button>
-          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="removeCogsSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.15rem;"></i></button>
+        <td style="padding: 8px 12px; text-align: center; white-space: nowrap;">
+          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 6px;" onclick="addCogsSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.25rem;"></i></button>
+          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 6px;" onclick="removeCogsSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.25rem;"></i></button>
         </td>
       </tr>
     `;
@@ -898,7 +938,7 @@ function renderCogsSegmentRows() {
   tbody.innerHTML = html;
 }
 
-// Table 3: OpEx Segments Rendering
+// Table 3: OpEx Segments Rendering (Full Width)
 function renderOpexSegmentRows() {
   const tbody = document.getElementById('tbody-opex-segments');
   if (!tbody) return;
@@ -907,21 +947,21 @@ function renderOpexSegmentRows() {
   opexSegments.forEach((op, idx) => {
     html += `
       <tr style="border-bottom: 1px solid var(--card-border);">
-        <td style="padding: 6px;">
-          <input type="text" class="form-control" value="${op.name}" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateOpexName(${idx}, this.value)">
+        <td style="padding: 8px 12px;">
+          <input type="text" class="form-control" value="${op.name}" style="padding: 6px 10px; font-size: 0.88rem;" onchange="updateOpexName(${idx}, this.value)">
         </td>
-        <td style="padding: 6px;">
-          <input type="number" class="form-control" value="${op.base_amount}" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateOpexAmount(${idx}, this.value)">
+        <td style="padding: 8px 12px; text-align: right;">
+          <input type="number" class="form-control" value="${op.base_amount}" style="padding: 6px 10px; font-size: 0.88rem; text-align: right;" onchange="updateOpexAmount(${idx}, this.value)">
         </td>
-        <td style="padding: 6px;">
-          <input type="number" class="form-control" value="${(op.ratio_pct * 100).toFixed(1)}" step="0.5" style="padding: 4px 8px; font-size: 0.85rem;" onchange="updateOpexRatio(${idx}, this.value)">
+        <td style="padding: 8px 12px; text-align: right;">
+          <input type="number" class="form-control" value="${(op.ratio_pct * 100).toFixed(1)}" step="0.5" style="padding: 6px 10px; font-size: 0.88rem; text-align: right;" onchange="updateOpexRatio(${idx}, this.value)">
         </td>
-        <td style="padding: 6px; font-weight: 700;" id="opex-y1-${idx}">
+        <td style="padding: 8px 12px; font-weight: 700; text-align: right;" id="opex-y1-${idx}">
           $0.00
         </td>
-        <td style="padding: 6px; text-align: center; white-space: nowrap;">
-          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="addOpexSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.15rem;"></i></button>
-          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 4px;" onclick="removeOpexSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.15rem;"></i></button>
+        <td style="padding: 8px 12px; text-align: center; white-space: nowrap;">
+          <button type="button" title="在此列下方新增" style="background: transparent; border: none; cursor: pointer; padding: 2px 6px;" onclick="addOpexSegmentRow(${idx})"><i class="ph-duotone ph-plus-circle" style="color: #D96B82; font-size: 1.25rem;"></i></button>
+          <button type="button" title="刪除本列" style="background: transparent; border: none; cursor: pointer; padding: 2px 6px;" onclick="removeOpexSegmentRow(${idx})"><i class="ph-duotone ph-trash" style="color: #82776E; font-size: 1.25rem;"></i></button>
         </td>
       </tr>
     `;
@@ -1159,9 +1199,12 @@ async function executeForecast() {
   const historical_pe_avg = parseFloat(document.getElementById('fc-pe-avg')?.value) || 24.0;
   const wacc = (parseFloat(document.getElementById('fc-wacc')?.value) || 9.0) / 100.0;
 
+  // Auto-switch to Output Sub-Tab in Tab 3!
+  switchForecastSubTab('subtab-fc-output');
+
   const outBox = document.getElementById('forecast-output');
   if (!outBox) return;
-  outBox.innerHTML = `<div style="font-size: 0.95rem; color: #82776E; padding: 12px;">⚡ 正在計算 【${ticker}】 2026~2028 完整損益表、預估 EPS、前瞻 P/E 與本益比評價診斷...</div>`;
+  outBox.innerHTML = `<div style="font-size: 1rem; color: #82776E; padding: 24px; line-height: 1.8;"><i class="ph-duotone ph-sparkle" style="font-size: 1.3rem; color: #D96B82;"></i> 正在計算 【${ticker}】 2026~2028 完整損益表、預估 EPS、前瞻 P/E 與本益比評價診斷...</div>`;
 
   try {
     const res = await fetch('/api/forecast', {
@@ -1304,162 +1347,162 @@ async function executeForecast() {
 
     let html = `
       <!-- Card 1: P/E Valuation & Timing Diagnostics Signal -->
-      <div style="background: #FFF5F7; border: 1px solid rgba(255, 183, 197, 0.8); border-radius: var(--radius-md); padding: 18px; margin-bottom: 24px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+      <div style="background: #FFF5F7; border: 1px solid rgba(255, 183, 197, 0.8); border-radius: var(--radius-md); padding: 22px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
           <div>
-            <h4 style="margin: 0; color: #D96B82; font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
-              🚦 【${ticker}】 投資切入時機診斷與前瞻 P/E 評價
+            <h4 style="margin: 0; color: #D96B82; font-size: 1.15rem; display: flex; align-items: center; gap: 8px;">
+              <i class="ph-duotone ph-target"></i> 【${ticker}】 投資切入時機診斷與前瞻 P/E 評價
             </h4>
-            <div style="font-size: 0.9rem; color: #4A4036; margin-top: 6px;">${timingDesc}</div>
+            <div style="font-size: 0.92rem; color: #4A4036; margin-top: 6px;">${timingDesc}</div>
           </div>
-          <div style="font-size: 0.95rem; font-weight: 700; padding: 8px 16px; border-radius: 8px; background: #FFF; border: 1.5px solid var(--primary-pink); color: #D96B82;">
+          <div style="font-size: 0.98rem; font-weight: 700; padding: 8px 18px; border-radius: 8px; background: #FFF; border: 1.5px solid var(--primary-pink); color: #D96B82;">
             ${timingSignal}
           </div>
         </div>
-        <div style="display: flex; gap: 20px; margin-top: 14px; flex-wrap: wrap; font-size: 0.9rem; background: rgba(255,255,255,0.85); padding: 12px 16px; border-radius: 8px; border: 1px solid rgba(255, 183, 197, 0.4);">
+        <div style="display: flex; gap: 24px; margin-top: 16px; flex-wrap: wrap; font-size: 0.92rem; background: rgba(255,255,255,0.85); padding: 14px 18px; border-radius: 8px; border: 1px solid rgba(255, 183, 197, 0.4);">
           <div>當前股價: <strong>$${fmtNum(current_price, 2)}</strong></div>
           <div>歷史均值 P/E: <strong>${fmtNum(historical_pe_avg, 1)}x</strong></div>
-          <div>${y1}E 預估 EPS: <strong style="color: ${isLoss1 ? '#EF4444' : '#D96B82'}; font-size: 1.05rem;">${isLoss1 ? `-$${fmtNum(Math.abs(eps1), 2)} (虧損)` : `$${fmtNum(eps1, 2)}`}</strong></div>
-          <div>${y1}E 前瞻 P/E: <strong style="color: #D96B82; font-size: 1.05rem;">${fwdPeDisplay1}</strong></div>
+          <div>${y1}E 預估 EPS: <strong style="color: ${isLoss1 ? '#EF4444' : '#D96B82'}; font-size: 1.1rem;">${isLoss1 ? `-$${fmtNum(Math.abs(eps1), 2)} (虧損)` : `$${fmtNum(eps1, 2)}`}</strong></div>
+          <div>${y1}E 前瞻 P/E: <strong style="color: #D96B82; font-size: 1.1rem;">${fwdPeDisplay1}</strong></div>
           <div>${y1}E 前瞻 P/S (市銷率): <strong style="color: #4A4036;">${fmtNum(fwdPs1, 2)}x</strong></div>
-          ${targetPrice1 > 0 ? `<div>${y1}E 目標股價: <strong style="color: #34D399; font-size: 1.05rem;">$${fmtNum(targetPrice1, 2)}</strong> (隱含 <strong style="color: #34D399;">+${fmtNum(upsidePct1, 1)}%</strong> 潛在上漲空間)</div>` : ''}
+          ${targetPrice1 > 0 ? `<div>${y1}E 目標股價: <strong style="color: #34D399; font-size: 1.1rem;">$${fmtNum(targetPrice1, 2)}</strong> (隱含 <strong style="color: #34D399;">+${fmtNum(upsidePct1, 1)}%</strong> 潛在上漲空間)</div>` : ''}
         </div>
       </div>
 
-      <!-- Card 2: Full 3-Year Income Statement & EPS Table -->
-      <div style="margin-bottom: 24px; background: #FFF; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 18px;">
-        <h4 style="margin: 0 0 14px 0; color: var(--text-main); font-size: 1.08rem; display: flex; align-items: center; gap: 8px;">
-          📈 2. 完整 3 年 Pro-Forma 損益表與 EPS 推算表格 (${ticker} Full Income Statement)
+      <!-- Card 2: Full 3-Year Income Statement & EPS Table (Full Width 5 Columns) -->
+      <div style="margin-bottom: 24px; background: #FFF; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 22px;">
+        <h4 style="margin: 0 0 16px 0; color: var(--text-main); font-size: 1.12rem; display: flex; align-items: center; gap: 8px;">
+          <i class="ph-duotone ph-table"></i> 完整 3 年 Pro-Forma 損益表與 EPS 推算表格 (${ticker} Full Income Statement)
         </h4>
         <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem; text-align: left; background: #FFF;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.92rem; text-align: left; background: #FFF;">
             <thead>
               <tr style="background: #F8F3ED; border-bottom: 2px solid var(--card-border);">
-                <th style="padding: 12px 14px; font-weight: 700;">損益表項目 (Income Statement Items)</th>
-                <th style="padding: 12px 14px; font-weight: 700;">基期 ${baseYear} 年</th>
-                <th style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.2); color: #D96B82;">${y1} 年 (Y1)</th>
-                <th style="padding: 12px 14px; font-weight: 700;">${y2} 年 (Y2)</th>
-                <th style="padding: 12px 14px; font-weight: 700;">${y3} 年 (Y3)</th>
+                <th style="padding: 14px 18px; font-weight: 700;">損益表項目 (Income Statement Items)</th>
+                <th style="padding: 14px 18px; font-weight: 700; text-align: right;">基期 ${baseYear} 年</th>
+                <th style="padding: 14px 18px; font-weight: 700; background: rgba(255, 183, 197, 0.2); color: #D96B82; text-align: right;">${y1} 年 (Y1)</th>
+                <th style="padding: 14px 18px; font-weight: 700; text-align: right;">${y2} 年 (Y2)</th>
+                <th style="padding: 14px 18px; font-weight: 700; text-align: right;">${y3} 年 (Y3)</th>
               </tr>
             </thead>
             <tbody>
               <tr style="border-bottom: 1px solid var(--card-border);">
-                <td style="padding: 12px 14px; font-weight: 700;">總營業收入 (Total Revenue)</td>
-                <td style="padding: 12px 14px;">$${fmtNum(rev0, 0)}M</td>
-                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.08);">$${fmtNum(rev1, 0)}M <span style="font-size:0.82rem; color: ${gRev1 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev1 >= 0 ? '+' : ''}${fmtNum(gRev1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(rev2, 0)}M <span style="font-size:0.82rem; color: ${gRev2 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev2 >= 0 ? '+' : ''}${fmtNum(gRev2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(rev3, 0)}M <span style="font-size:0.82rem; color: ${gRev3 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev3 >= 0 ? '+' : ''}${fmtNum(gRev3, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700;">總營業收入 (Total Revenue)</td>
+                <td style="padding: 14px 18px; text-align: right;">$${fmtNum(rev0, 0)}M</td>
+                <td style="padding: 14px 18px; font-weight: 700; background: rgba(255, 183, 197, 0.08); text-align: right;">$${fmtNum(rev1, 0)}M <span style="font-size:0.84rem; color: ${gRev1 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev1 >= 0 ? '+' : ''}${fmtNum(gRev1, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; text-align: right;">$${fmtNum(rev2, 0)}M <span style="font-size:0.84rem; color: ${gRev2 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev2 >= 0 ? '+' : ''}${fmtNum(gRev2, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; text-align: right;">$${fmtNum(rev3, 0)}M <span style="font-size:0.84rem; color: ${gRev3 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gRev3 >= 0 ? '+' : ''}${fmtNum(gRev3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
-                <td style="padding: 12px 14px; font-weight: 600;">總營業成本 (Total COGS)</td>
-                <td style="padding: 12px 14px;">$${fmtNum(cogs0, 0)}M</td>
-                <td style="padding: 12px 14px; background: rgba(255, 183, 197, 0.08); font-weight: 600;">$${fmtNum(cogs1, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( ${gCogs1 >= 0 ? '+' : ''}${fmtNum(gCogs1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(cogs2, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( ${gCogs2 >= 0 ? '+' : ''}${fmtNum(gCogs2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(cogs3, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( ${gCogs3 >= 0 ? '+' : ''}${fmtNum(gCogs3, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 600;">總營業成本 (Total COGS)</td>
+                <td style="padding: 14px 18px; text-align: right;">$${fmtNum(cogs0, 0)}M</td>
+                <td style="padding: 14px 18px; background: rgba(255, 183, 197, 0.08); font-weight: 600; text-align: right;">$${fmtNum(cogs1, 0)}M <span style="font-size:0.84rem; color: #D96B82;">( ${gCogs1 >= 0 ? '+' : ''}${fmtNum(gCogs1, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 600; text-align: right;">$${fmtNum(cogs2, 0)}M <span style="font-size:0.84rem; color: #D96B82;">( ${gCogs2 >= 0 ? '+' : ''}${fmtNum(gCogs2, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 600; text-align: right;">$${fmtNum(cogs3, 0)}M <span style="font-size:0.84rem; color: #D96B82;">( ${gCogs3 >= 0 ? '+' : ''}${fmtNum(gCogs3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border); background: #F9FFF9;">
-                <td style="padding: 12px 14px; font-weight: 700; color: #2E7D32;">營業毛利 (Gross Profit)</td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(gp0, 0)}M</td>
-                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.08); color: #2E7D32;">$${fmtNum(gp1, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( 毛利率 ${fmtNum(gm1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700; color: #2E7D32;">$${fmtNum(gp2, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( 毛利率 ${fmtNum(gm2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700; color: #2E7D32;">$${fmtNum(gp3, 0)}M <span style="font-size:0.82rem; color: #D96B82;">( 毛利率 ${fmtNum(gm3, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; color: #2E7D32;">營業毛利 (Gross Profit)</td>
+                <td style="padding: 14px 18px; font-weight: 700; text-align: right;">$${fmtNum(gp0, 0)}M</td>
+                <td style="padding: 14px 18px; font-weight: 700; background: rgba(255, 183, 197, 0.08); color: #2E7D32; text-align: right;">$${fmtNum(gp1, 0)}M <span style="font-size:0.84rem; color: #D96B82;">( 毛利率 ${fmtNum(gm1, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; color: #2E7D32; text-align: right;">$${fmtNum(gp2, 0)}M <span style="font-size:0.84rem; color: #D96B82;">( 毛利率 ${fmtNum(gm2, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; color: #2E7D32; text-align: right;">$${fmtNum(gp3, 0)}M <span style="font-size:0.84rem; color: #D96B82;">( 毛利率 ${fmtNum(gm3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
-                <td style="padding: 12px 14px; font-weight: 600;">總營業費用 (Total OpEx)</td>
-                <td style="padding: 12px 14px;">$${fmtNum(opex0, 0)}M</td>
-                <td style="padding: 12px 14px; background: rgba(255, 183, 197, 0.08); font-weight: 600;">$${fmtNum(opex1, 0)}M <span style="font-size:0.82rem; color: ${gOpEx1 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx1 >= 0 ? '+' : ''}${fmtNum(gOpEx1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(opex2, 0)}M <span style="font-size:0.82rem; color: ${gOpEx2 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx2 >= 0 ? '+' : ''}${fmtNum(gOpEx2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 600;">$${fmtNum(opex3, 0)}M <span style="font-size:0.82rem; color: ${gOpEx3 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx3 >= 0 ? '+' : ''}${fmtNum(gOpEx3, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 600;">總營業費用 (Total OpEx)</td>
+                <td style="padding: 14px 18px; text-align: right;">$${fmtNum(opex0, 0)}M</td>
+                <td style="padding: 14px 18px; background: rgba(255, 183, 197, 0.08); font-weight: 600; text-align: right;">$${fmtNum(opex1, 0)}M <span style="font-size:0.84rem; color: ${gOpEx1 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx1 >= 0 ? '+' : ''}${fmtNum(gOpEx1, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 600; text-align: right;">$${fmtNum(opex2, 0)}M <span style="font-size:0.84rem; color: ${gOpEx2 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx2 >= 0 ? '+' : ''}${fmtNum(gOpEx2, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 600; text-align: right;">$${fmtNum(opex3, 0)}M <span style="font-size:0.84rem; color: ${gOpEx3 < 0 ? '#EF4444' : '#D96B82'}; font-weight: 600;">( ${gOpEx3 >= 0 ? '+' : ''}${fmtNum(gOpEx3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border); background: #FFF8F9;">
-                <td style="padding: 12px 14px; font-weight: 700; color: ${op1 < 0 ? '#EF4444' : '#D96B82'};">營業利潤 (Operating Income / EBIT)</td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(op0, 0)}M</td>
-                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.12); color: ${op1 < 0 ? '#EF4444' : '#D96B82'};">$${fmtNum(op1, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm1, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700; color: ${op2 < 0 ? '#EF4444' : '#D96B82'};">$${fmtNum(op2, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm2, 1)}% )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700; color: ${op3 < 0 ? '#EF4444' : '#D96B82'};">$${fmtNum(op3, 0)}M <span style="font-size:0.82rem;">( 利潤率 ${fmtNum(opm3, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; color: ${op1 < 0 ? '#EF4444' : '#D96B82'};">營業利潤 (Operating Income / EBIT)</td>
+                <td style="padding: 14px 18px; font-weight: 700; text-align: right;">$${fmtNum(op0, 0)}M</td>
+                <td style="padding: 14px 18px; font-weight: 700; background: rgba(255, 183, 197, 0.12); color: ${op1 < 0 ? '#EF4444' : '#D96B82'}; text-align: right;">$${fmtNum(op1, 0)}M <span style="font-size:0.84rem;">( 利潤率 ${fmtNum(opm1, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; color: ${op2 < 0 ? '#EF4444' : '#D96B82'}; text-align: right;">$${fmtNum(op2, 0)}M <span style="font-size:0.84rem;">( 利潤率 ${fmtNum(opm2, 1)}% )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; color: ${op3 < 0 ? '#EF4444' : '#D96B82'}; text-align: right;">$${fmtNum(op3, 0)}M <span style="font-size:0.84rem;">( 利潤率 ${fmtNum(opm3, 1)}% )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
-                <td style="padding: 12px 14px; font-size: 0.88rem; color: #82776E;">預估所得稅率 / 稅額 (Tax Rate 21%)</td>
-                <td style="padding: 12px 14px; color: #82776E;">$${fmtNum(tax0, 0)}M</td>
-                <td style="padding: 12px 14px; background: rgba(255, 183, 197, 0.08); color: #82776E;">$${fmtNum(tax1, 0)}M</td>
-                <td style="padding: 12px 14px; color: #82776E;">$${fmtNum(tax2, 0)}M</td>
-                <td style="padding: 12px 14px; color: #82776E;">$${fmtNum(tax3, 0)}M</td>
+                <td style="padding: 14px 18px; font-size: 0.9rem; color: #82776E;">預估所得稅率 / 稅額 (Tax Rate 21%)</td>
+                <td style="padding: 14px 18px; color: #82776E; text-align: right;">$${fmtNum(tax0, 0)}M</td>
+                <td style="padding: 14px 18px; background: rgba(255, 183, 197, 0.08); color: #82776E; text-align: right;">$${fmtNum(tax1, 0)}M</td>
+                <td style="padding: 14px 18px; color: #82776E; text-align: right;">$${fmtNum(tax2, 0)}M</td>
+                <td style="padding: 14px 18px; color: #82776E; text-align: right;">$${fmtNum(tax3, 0)}M</td>
               </tr>
               <tr style="border-bottom: 2px solid var(--card-border); background: #FAF8F5;">
-                <td style="padding: 12px 14px; font-weight: 700;">稅後淨利 (Net Income / NOPAT)</td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(net0, 0)}M</td>
-                <td style="padding: 12px 14px; font-weight: 700; background: rgba(255, 183, 197, 0.12); color: ${net1 < 0 ? '#EF4444' : '#D96B82'};">$${fmtNum(net1, 0)}M <span style="font-size:0.82rem;">( ${gNet1 >= 0 ? '+' : ''}${fmtNum(gNet1, 1)}% YoY )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(net2, 0)}M <span style="font-size:0.82rem; color: ${net2 < 0 ? '#EF4444' : '#D96B82'};">( ${gNet2 >= 0 ? '+' : ''}${fmtNum(gNet2, 1)}% YoY )</span></td>
-                <td style="padding: 12px 14px; font-weight: 700;">$${fmtNum(net3, 0)}M <span style="font-size:0.82rem; color: ${net3 < 0 ? '#EF4444' : '#D96B82'};">( ${gNet3 >= 0 ? '+' : ''}${fmtNum(gNet3, 1)}% YoY )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700;">稅後淨利 (Net Income / NOPAT)</td>
+                <td style="padding: 14px 18px; font-weight: 700; text-align: right;">$${fmtNum(net0, 0)}M</td>
+                <td style="padding: 14px 18px; font-weight: 700; background: rgba(255, 183, 197, 0.12); color: ${net1 < 0 ? '#EF4444' : '#D96B82'}; text-align: right;">$${fmtNum(net1, 0)}M <span style="font-size:0.84rem;">( ${gNet1 >= 0 ? '+' : ''}${fmtNum(gNet1, 1)}% YoY )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; text-align: right;">$${fmtNum(net2, 0)}M <span style="font-size:0.84rem; color: ${net2 < 0 ? '#EF4444' : '#D96B82'}; text-align: right;">( ${gNet2 >= 0 ? '+' : ''}${fmtNum(gNet2, 1)}% YoY )</span></td>
+                <td style="padding: 14px 18px; font-weight: 700; text-align: right;">$${fmtNum(net3, 0)}M <span style="font-size:0.84rem; color: ${net3 < 0 ? '#EF4444' : '#D96B82'}; text-align: right;">( ${gNet3 >= 0 ? '+' : ''}${fmtNum(gNet3, 1)}% YoY )</span></td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
-                <td style="padding: 12px 14px; font-size: 0.88rem;">發行在外總股數 (Diluted Shares)</td>
-                <td style="padding: 12px 14px;">${fmtNum(shares_outstanding, 0)}M 股</td>
-                <td style="padding: 12px 14px; background: rgba(255, 183, 197, 0.08); font-weight: 600;">${fmtNum(shares_outstanding, 0)}M 股</td>
-                <td style="padding: 12px 14px; font-weight: 600;">${fmtNum(shares_outstanding, 0)}M 股</td>
-                <td style="padding: 12px 14px; font-weight: 600;">${fmtNum(shares_outstanding, 0)}M 股</td>
+                <td style="padding: 14px 18px; font-size: 0.9rem;">發行在外總股數 (Diluted Shares)</td>
+                <td style="padding: 14px 18px; text-align: right;">${fmtNum(shares_outstanding, 0)}M 股</td>
+                <td style="padding: 14px 18px; background: rgba(255, 183, 197, 0.08); font-weight: 600; text-align: right;">${fmtNum(shares_outstanding, 0)}M 股</td>
+                <td style="padding: 14px 18px; font-weight: 600; text-align: right;">${fmtNum(shares_outstanding, 0)}M 股</td>
+                <td style="padding: 14px 18px; font-weight: 600; text-align: right;">${fmtNum(shares_outstanding, 0)}M 股</td>
               </tr>
               <tr style="border-bottom: 2px solid var(--card-border); background: #FFF0F3;">
-                <td style="padding: 14px; font-weight: 700; font-size: 1rem; color: #D96B82;">🎯 每股盈餘 (Projected EPS)</td>
-                <td style="padding: 14px; font-weight: 700; font-size: 1.05rem;">$${fmtNum(eps0, 2)}</td>
-                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: ${isLoss1 ? '#EF4444' : '#D96B82'}; background: rgba(255, 183, 197, 0.25);">${isLoss1 ? `-$${fmtNum(Math.abs(eps1), 2)} (每股虧損)` : `$${fmtNum(eps1, 2)}`} <span style="font-size:0.82rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay1})</span></td>
-                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: ${isLoss2 ? '#EF4444' : '#D96B82'};">${isLoss2 ? `-$${fmtNum(Math.abs(eps2), 2)} (每股虧損)` : `$${fmtNum(eps2, 2)}`} <span style="font-size:0.82rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay2})</span></td>
-                <td style="padding: 14px; font-weight: 700; font-size: 1.15rem; color: ${isLoss3 ? '#EF4444' : '#D96B82'};">${isLoss3 ? `-$${fmtNum(Math.abs(eps3), 2)} (每股虧損)` : `$${fmtNum(eps3, 2)}`} <span style="font-size:0.82rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay3})</span></td>
+                <td style="padding: 16px 18px; font-weight: 700; font-size: 1.05rem; color: #D96B82;">🎯 每股盈餘 (Projected EPS)</td>
+                <td style="padding: 16px 18px; font-weight: 700; font-size: 1.1rem; text-align: right;">$${fmtNum(eps0, 2)}</td>
+                <td style="padding: 16px 18px; font-weight: 700; font-size: 1.2rem; color: ${isLoss1 ? '#EF4444' : '#D96B82'}; background: rgba(255, 183, 197, 0.25); text-align: right;">${isLoss1 ? `-$${fmtNum(Math.abs(eps1), 2)} (每股虧損)` : `$${fmtNum(eps1, 2)}`} <span style="font-size:0.84rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay1})</span></td>
+                <td style="padding: 16px 18px; font-weight: 700; font-size: 1.2rem; color: ${isLoss2 ? '#EF4444' : '#D96B82'}; text-align: right;">${isLoss2 ? `-$${fmtNum(Math.abs(eps2), 2)} (每股虧損)` : `$${fmtNum(eps2, 2)}`} <span style="font-size:0.84rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay2})</span></td>
+                <td style="padding: 16px 18px; font-weight: 700; font-size: 1.2rem; color: ${isLoss3 ? '#EF4444' : '#D96B82'}; text-align: right;">${isLoss3 ? `-$${fmtNum(Math.abs(eps3), 2)} (每股虧損)` : `$${fmtNum(eps3, 2)}`} <span style="font-size:0.84rem; font-weight:600; display:block; margin-top:2px;">(Forward P/E: ${fwdPeDisplay3})</span></td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <!-- Card 3: Multi-Scenario DCF Valuation Summary -->
-      <div style="margin-bottom: 20px; background: #FFF; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 18px;">
-        <h4 style="margin: 0 0 14px 0; color: var(--text-main); font-size: 1.05rem; display: flex; align-items: center; gap: 8px;">
-          📊 3. Bull / Base / Bear 多情境企業價值 (DCF Enterprise Value) 對比
+      <!-- Card 3: Multi-Scenario DCF Valuation Summary (Full Width) -->
+      <div style="margin-bottom: 20px; background: #FFF; border: 1px solid var(--card-border); border-radius: var(--radius-md); padding: 22px;">
+        <h4 style="margin: 0 0 16px 0; color: var(--text-main); font-size: 1.1rem; display: flex; align-items: center; gap: 8px;">
+          <i class="ph-duotone ph-chart-line-up"></i> Bull / Base / Bear 多情境企業價值 (DCF Enterprise Value) 對比
         </h4>
         <div style="overflow-x: auto;">
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.88rem; text-align: left; background: #FFF;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 0.92rem; text-align: left; background: #FFF;">
             <thead>
               <tr style="background: var(--bg-secondary); border-bottom: 2px solid var(--card-border);">
-                <th style="padding: 10px;">情境 (Scenario)</th>
-                <th style="padding: 10px;">${y1}年 預估營收 ($M)</th>
-                <th style="padding: 10px;">${y3}年 預估營收 ($M)</th>
-                <th style="padding: 10px;">${y3}年 營業利潤 ($M)</th>
-                <th style="padding: 10px;">${y3}年 自由現金流 ($M)</th>
-                <th style="padding: 10px; color: #D96B82;">DCF 企業價值估值 ($M)</th>
+                <th style="padding: 12px 16px;">情境 (Scenario)</th>
+                <th style="padding: 12px 16px; text-align: right;">${y1}年 預估營收 ($M)</th>
+                <th style="padding: 12px 16px; text-align: right;">${y3}年 預估營收 ($M)</th>
+                <th style="padding: 12px 16px; text-align: right;">${y3}年 營業利潤 ($M)</th>
+                <th style="padding: 12px 16px; text-align: right;">${y3}年 自由現金流 ($M)</th>
+                <th style="padding: 12px 16px; color: #D96B82; text-align: right;">DCF 企業價值估值 ($M)</th>
               </tr>
             </thead>
             <tbody>
               <tr style="border-bottom: 1px solid var(--card-border);">
-                <td style="padding: 10px; font-weight: 700; color: #34D399;">🟢 Bull Case (樂觀)</td>
-                <td style="padding: 10px;">$${fmtNum(bullProj[0]?.Revenue || (rev1 * 1.08))} <span style="font-size:0.75rem; color:#34D399;">(+${fmtNum(((bullProj[0]?.RevenueGrowth || 0.16)*100), 1)}%)</span></td>
-                <td style="padding: 10px;">$${fmtNum(bullProj[2]?.Revenue || (rev3 * 1.15))}</td>
-                <td style="padding: 10px;">$${fmtNum(bullProj[2]?.OperatingIncome || (op3 * 1.2))}</td>
-                <td style="padding: 10px;">$${fmtNum(bullProj[2]?.FreeCashFlow || (net3 * 1.2))}</td>
-                <td style="padding: 10px; font-weight: 700; color: #34D399;">$${fmtNum(bullScenario.DCF_Valuation?.ImpliedEnterpriseValue || 2350000)}M</td>
+                <td style="padding: 12px 16px; font-weight: 700; color: #34D399;">🟢 Bull Case (樂觀)</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(bullProj[0]?.Revenue || (rev1 * 1.08))} <span style="font-size:0.78rem; color:#34D399;">(+${fmtNum(((bullProj[0]?.RevenueGrowth || 0.16)*100), 1)}%)</span></td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(bullProj[2]?.Revenue || (rev3 * 1.15))}</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(bullProj[2]?.OperatingIncome || (op3 * 1.2))}</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(bullProj[2]?.FreeCashFlow || (net3 * 1.2))}</td>
+                <td style="padding: 12px 16px; font-weight: 700; color: #34D399; text-align: right;">$${fmtNum(bullScenario.DCF_Valuation?.ImpliedEnterpriseValue || 2350000)}M</td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border); background: #FFF5F7;">
-                <td style="padding: 10px; font-weight: 700; color: var(--text-main);">🟡 Base Case (基準)</td>
-                <td style="padding: 10px;">$${fmtNum(rev1)} <span style="font-size:0.75rem; color:${gRev1 < 0 ? '#EF4444' : '#D96B82'}; font-weight:600;">(${gRev1 >= 0 ? '+' : ''}${fmtNum(gRev1, 1)}%)</span></td>
-                <td style="padding: 10px;">$${fmtNum(rev3)}</td>
-                <td style="padding: 10px;">$${fmtNum(op3)}</td>
-                <td style="padding: 10px;">$${fmtNum(net3 * 0.9)}</td>
-                <td style="padding: 10px; font-weight: 700; color: #D96B82;">$${fmtNum(baseScenario.DCF_Valuation?.ImpliedEnterpriseValue || 1980000)}M</td>
+                <td style="padding: 12px 16px; font-weight: 700; color: var(--text-main);">🟡 Base Case (基準)</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(rev1)} <span style="font-size:0.78rem; color:${gRev1 < 0 ? '#EF4444' : '#D96B82'}; font-weight:600;">(${gRev1 >= 0 ? '+' : ''}${fmtNum(gRev1, 1)}%)</span></td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(rev3)}</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(op3)}</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(net3 * 0.9)}</td>
+                <td style="padding: 12px 16px; font-weight: 700; color: #D96B82; text-align: right;">$${fmtNum(baseScenario.DCF_Valuation?.ImpliedEnterpriseValue || 1980000)}M</td>
               </tr>
               <tr style="border-bottom: 1px solid var(--card-border);">
-                <td style="padding: 10px; font-weight: 700; color: #82776E;">🔴 Bear Case (悲觀)</td>
-                <td style="padding: 10px;">$${fmtNum(bearProj[0]?.Revenue || (rev1 * 0.92))} <span style="font-size:0.75rem; color:#82776E;">(+${fmtNum(((bearProj[0]?.RevenueGrowth || 0.05)*100), 1)}%)</span></td>
-                <td style="padding: 10px;">$${fmtNum(bearProj[2]?.Revenue || (rev3 * 0.85))}</td>
-                <td style="padding: 10px;">$${fmtNum(bearProj[2]?.OperatingIncome || (op3 * 0.8))}</td>
-                <td style="padding: 10px;">$${fmtNum(bearProj[2]?.FreeCashFlow || (net3 * 0.75))}</td>
-                <td style="padding: 10px; font-weight: 700; color: #82776E;">$${fmtNum(bearScenario.DCF_Valuation?.ImpliedEnterpriseValue || 1550000)}M</td>
+                <td style="padding: 12px 16px; font-weight: 700; color: #82776E;">🔴 Bear Case (悲觀)</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(bearProj[0]?.Revenue || (rev1 * 0.92))} <span style="font-size:0.78rem; color:#82776E;">(+${fmtNum(((bearProj[0]?.RevenueGrowth || 0.05)*100), 1)}%)</span></td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(bearProj[2]?.Revenue || (rev3 * 0.85))}</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(bearProj[2]?.OperatingIncome || (op3 * 0.8))}</td>
+                <td style="padding: 12px 16px; text-align: right;">$${fmtNum(bearProj[2]?.FreeCashFlow || (net3 * 0.75))}</td>
+                <td style="padding: 12px 16px; font-weight: 700; color: #82776E; text-align: right;">$${fmtNum(bearScenario.DCF_Valuation?.ImpliedEnterpriseValue || 1550000)}M</td>
               </tr>
             </tbody>
           </table>
         </div>
       </div>
 
-      <div style="font-size: 0.82rem; color: #82776E; margin-top: 10px;">
-        ✅ 完整預測報告已自動生成至 <code>data/processed/${data.report_file}</code> 並同步至 NotebookLM！
+      <div style="font-size: 0.85rem; color: #82776E; margin-top: 12px;">
+        <i class="ph-duotone ph-check-circle" style="color: #2E7D32;"></i> 完整預測報告已自動生成至 <code>data/processed/${data.report_file}</code> 並同步至 NotebookLM！
       </div>
     `;
 
@@ -1481,7 +1524,7 @@ async function executeReview() {
 
   const outBox = document.getElementById('review-output');
   if (!outBox) return;
-  outBox.innerText = `⚖️ 正在比對 【${ticker}】 真實開獎數據並由 Gemini AI 進行偏差診斷...`;
+  outBox.innerHTML = `<div style="padding: 18px; color: #82776E;"><i class="ph-duotone ph-scales"></i> 正在比對 【${ticker}】 真實開獎數據並由 Gemini AI 進行偏差歸因診斷...</div>`;
 
   try {
     const res = await fetch('/api/review', {
@@ -1498,11 +1541,11 @@ async function executeReview() {
     const data = await res.json();
     const comp = data.review_data?.Comparison || {};
 
-    let outputText = `=== ${ticker} 預測 vs 實際 復盤比對結果 ===\n\n`;
-    outputText += `• 營收: 預測 $${comp.Revenue?.Forecast}M vs 實際 $${comp.Revenue?.Actual}M (偏差 ${comp.Revenue?.VariancePct}%)\n`;
-    outputText += `• 營業利潤: 預測 $${comp.OperatingIncome?.Forecast}M vs 實際 $${comp.OperatingIncome?.Actual}M (偏差 ${comp.OperatingIncome?.VariancePct}%)\n`;
-    outputText += `• 毛利率: 預測 ${((comp.GrossMargin?.Forecast || 0)*100).toFixed(1)}% vs 實際 ${((comp.GrossMargin?.Actual || 0)*100).toFixed(1)}% (差異 ${comp.GrossMargin?.VarianceDiffPts} 百分點)\n\n`;
-    outputText += `=== AI 偏差診斷與經驗優化建議 ===\n`;
+    let outputText = `### 📊 ${ticker} 預測 vs 實際 復盤比對結果\n\n`;
+    outputText += `• **營業收入**: 預測 \`$${comp.Revenue?.Forecast}M\` vs 實際 \`$${comp.Revenue?.Actual}M\` (偏差 **${comp.Revenue?.VariancePct}%**)\n`;
+    outputText += `• **營業利潤**: 預測 \`$${comp.OperatingIncome?.Forecast}M\` vs 實際 \`$${comp.OperatingIncome?.Actual}M\` (偏差 **${comp.OperatingIncome?.VariancePct}%**)\n`;
+    outputText += `• **營業毛利率**: 預測 \`${((comp.GrossMargin?.Forecast || 0)*100).toFixed(1)}%\` vs 實際 \`${((comp.GrossMargin?.Actual || 0)*100).toFixed(1)}%\` (差異 **${comp.GrossMargin?.VarianceDiffPts} 百分點**)\n\n`;
+    outputText += `### 🔍 AI 偏差歸因診斷與經驗優化建議\n`;
     outputText += data.review_data?.AttributionDiagnosis || '';
 
     outBox.innerHTML = formatMarkdownText(outputText);
@@ -1522,13 +1565,13 @@ async function loadReports() {
     const res = await fetch('/api/reports');
     const data = await res.json();
 
-    let html = `<h4>Processed Reports (${data.processed.length})</h4><ul>`;
+    let html = `<h4 style="margin-bottom: 10px; color: var(--text-main); font-size: 1.05rem;">📄 已生成之 Markdown 研讀與預測報告 (${data.processed.length})</h4><ul style="line-height: 2; margin-left: 20px; color: #4A4036;">`;
     data.processed.forEach(f => {
-      html += `<li>📄 <code>data/processed/${f}</code></li>`;
+      html += `<li><code>data/processed/${f}</code></li>`;
     });
-    html += `</ul><br><h4>NotebookLM Sync Folder (${data.notebooklm_sync.length})</h4><ul>`;
+    html += `</ul><br><h4 style="margin-bottom: 10px; color: var(--text-main); font-size: 1.05rem;">📂 NotebookLM 同步資料夾 (${data.notebooklm_sync.length})</h4><ul style="line-height: 2; margin-left: 20px; color: #4A4036;">`;
     data.notebooklm_sync.forEach(f => {
-      html += `<li>📂 <code>data/notebooklm_sync/${f}</code> (準備一鍵上傳/連結至 NotebookLM)</li>`;
+      html += `<li><code>data/notebooklm_sync/${f}</code> (準備一鍵上傳/連結至 NotebookLM)</li>`;
     });
     html += `</ul>`;
     listContainer.innerHTML = html;
